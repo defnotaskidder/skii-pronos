@@ -65,24 +65,22 @@ export async function POST(request) {
     const body = {
       model,
       max_tokens: 8000,
-      system: METHOD + (strict ? "\nCRITICAL: output the JSON array and nothing else. No preamble, no explanation, no code fences." : ""),
+      system: METHOD + (strict ? "\nCRITICAL: output the JSON array and nothing else. No preamble, no explanation, no code fences. Start your reply with the [ character." : ""),
       messages: [
-        { role: "user", content: `${modeText}${webSearch ? " You may web-search recent form, injuries and lineups before deciding." : ""}\nEvents (odds are real, decimal):\n${eventsToPrompt(events, extras)}\n\nReturn the JSON array only.` },
-        // Prefilling the assistant turn with "[" forces the reply to start as JSON.
-        { role: "assistant", content: "[" },
+        { role: "user", content: `${modeText}${webSearch ? " You may web-search recent form, injuries and lineups before deciding." : ""}\nEvents (odds are real, decimal):\n${eventsToPrompt(events, extras)}\n\nReturn the JSON array only, starting with [ and ending with ].` },
       ],
     };
-    if (webSearch) { body.tools = [{ type: "web_search_20250305", name: "web_search" }]; body.messages.pop(); }
+    if (webSearch) body.tools = [{ type: "web_search_20250305", name: "web_search" }];
     return body;
   };
 
   try {
-    let text, usage, prefilled = !webSearch;
+    let text, usage;
     ({ text, usage } = await callEngine(key, makeBody(false)));
-    let parsed = parsePicks(prefilled ? "[" + text : text);
+    let parsed = parsePicks(text);
     if (!parsed.length) {
       ({ text, usage } = await callEngine(key, makeBody(true)));
-      parsed = parsePicks(prefilled ? "[" + text : text);
+      parsed = parsePicks(text);
     }
     if (!parsed.length) {
       return NextResponse.json({ error: "The engine replied but no picks could be read. Try fewer leagues, or switch ENGINE_WEB_SEARCH off.", picks: [] }, { status: 200 });
