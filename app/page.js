@@ -82,13 +82,14 @@ export default function Page() {
   const analyze = async () => {
     if (!visible.length) { setError("Load odds first."); return; }
     setBusy(true); setError(""); setStatus("Engine is reading the odds and picking one market per match…");
-    const chunks = []; for (let i = 0; i < visible.length; i += 20) chunks.push(visible.slice(i, i + 20));
+    const chunks = []; for (let i = 0; i < visible.length; i += 8) chunks.push(visible.slice(i, i + 8));
     const next = { ...picks };
     for (const c of chunks) {
       try {
         const r = await fetch("/api/analyze", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ events: c, extras, mode }) });
         const d = await r.json();
         if (d.error) { setError(d.error); continue; }
+        if (d.note) setStatus(d.note);
         d.picks.forEach((p) => { next[p.event_id] = p; });
         setPicks({ ...next });
       } catch (e) { setError(e.message); }
