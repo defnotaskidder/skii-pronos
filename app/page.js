@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { buildSlip, product, hitChance, slipText } from "../lib/slip";
+import LiveScores from "./LiveScores";
 
 const SCOPES = ["Today", "Tomorrow", "Weekend", "7 days"];
 const TARGETS = [2, 3, 5, 10, 20, 50, 100, 200, 400];
@@ -194,6 +195,7 @@ export default function Page() {
             <div className="tabs">
               <button className={`tab ${tab === "board" ? "on" : ""}`} onClick={() => setTab("board")}>Board</button>
               <button className={`tab ${tab === "stars" ? "on" : ""}`} onClick={() => setTab("stars")}>★ Star picks{stars.length ? ` (${stars.length})` : ""}</button>
+              <button className={`tab ${tab === "live" ? "on" : ""}`} onClick={() => setTab("live")}>● Live</button>
               <button className={`tab ${tab === "history" ? "on" : ""}`} onClick={() => setTab("history")}>History ({runs.length})</button>
             </div>
             {quota?.remaining && <span className="quota">{quota.remaining} credits</span>}
@@ -202,6 +204,8 @@ export default function Page() {
       </div>
 
       <div className="wrap">
+        {tab === "live" && <LiveScores selected={selected} sports={sports} onQuota={setQuota} />}
+
         {tab === "history" && (
           <div>
             <div className="stats">
