@@ -4,7 +4,7 @@ import Icon from "./Icons";
 import { useSlip } from "./Providers";
 import { useNotify } from "./Notify";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
-import { Ring, StatusPill, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "./ui";
+import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "./ui";
 
 export const href = (ev) => `/match/${ev.league}/${ev.id}`;
 
@@ -105,7 +105,7 @@ export function LiveCard({ ev }) {
     <Link href={href(ev)} className="lcard">
       <div className="row" style={{ gap: 8 }}>
         <span className="pill live">{ev.minute ? `${ev.minute}'` : ev.detail || "LIVE"}</span>
-        <span className="muted" style={{ fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>{L?.flag} {L?.name}</span>
+        <span className="muted row" style={{ fontSize: 12, gap: 6, flexWrap: "nowrap", minWidth: 0, flex: 1 }}><LeagueFlag league={L} size={12} /><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{L?.name}</span></span>
         <FollowBtn ev={ev} small />
       </div>
       <div className="score">

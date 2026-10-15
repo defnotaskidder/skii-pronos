@@ -95,15 +95,16 @@ function TrackProvider({ children }) {
       const d = await r.json();
       const res = new Map((d.results || []).filter((x) => x.result).map((x) => [`${x.eventId}|${x.key}`, x]));
       if (!res.size) return;
-      set((cur) => cur.map((e) => {
-        const legs = e.legs.map((l) => { const x = res.get(`${l.eventId}|${l.key}`); return x && !l.result ? { ...l, result: x.result, score: x.score } : l; });
-        const was = e.legs.every((l) => l.result), now = legs.every((l) => l.result);
-        if (!was && now && notify?.prefs.results) {
-          const lost = legs.some((l) => l.result === "L");
-          notify.push({ kind: "result", title: lost ? `❌ “${e.title}” lost` : `✅ “${e.title}” won!`, body: lost ? "One or more legs failed." : `Paid @ ${product(legs.filter((l) => l.result === "W")).toFixed(2)}`, href: "/history", dedupe: `res-${e.id}` });
+      const apply = (e) => ({ ...e, legs: e.legs.map((l) => { const x = res.get(`${l.eventId}|${l.key}`); return x && !l.result ? { ...l, result: x.result, score: x.score } : l; }) });
+      // work out which coupons just finished before updating state, then notify outside the updater
+      const finished = entries.map(apply).filter((e, i) => !entries[i].legs.every((l) => l.result) && e.legs.every((l) => l.result));
+      set((cur) => cur.map(apply));
+      if (notify?.prefs.results) {
+        for (const e of finished) {
+          const lost = e.legs.some((l) => l.result === "L");
+          notify.push({ kind: "result", title: lost ? `❌ “${e.title}” lost` : `✅ “${e.title}” won!`, body: lost ? "One or more legs failed." : `Paid @ ${product(e.legs.filter((l) => l.result === "W")).toFixed(2)}`, href: "/history", dedupe: `res-${e.id}` });
         }
-        return { ...e, legs };
-      }));
+      }
     } catch { /* retry later */ } finally { busy.current = false; }
   }, [entries, set, notify]);
 

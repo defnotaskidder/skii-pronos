@@ -25,6 +25,13 @@ export function ago(iso) {
   return `${Math.floor(s / 86400)}d`;
 }
 
+// League flag: a real image (flag emoji don't render on Windows), emoji for the rest.
+export function LeagueFlag({ league, size = 18 }) {
+  if (!league) return null;
+  if (!league.cc) return <span className="lflag emoji" style={{ fontSize: size * 0.9 }} aria-hidden="true">{league.flag}</span>;
+  return <img className="lflag" src={`https://flagcdn.com/w40/${league.cc}.png`} alt="" width={Math.round(size * 1.33)} height={size} loading="lazy" />;
+}
+
 export function TeamLogo({ team, size = 28 }) {
   const initials = (team?.abbr || team?.short || team?.name || "?").slice(0, 3).toUpperCase();
   return (

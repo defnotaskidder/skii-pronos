@@ -5,7 +5,7 @@ import Icon from "../../../components/Icons";
 import { Top } from "../../../components/Shell";
 import { useSlip } from "../../../components/Providers";
 import { FollowBtn, toLeg } from "../../../components/Match";
-import { Form, Ring, Skeleton, StatusPill, TeamLogo, Tier, TriBar, dayLabel, localTime, odds2, pct } from "../../../components/ui";
+import { Form, LeagueFlag, Ring, Skeleton, StatusPill, TeamLogo, Tier, TriBar, dayLabel, localTime, odds2, pct } from "../../../components/ui";
 
 const STAT_LABEL = {
   possessionPct: "Possession %", totalShots: "Shots", shotsOnTarget: "Shots on target", wonCorners: "Corners", foulsCommitted: "Fouls",
@@ -57,7 +57,7 @@ export default function MatchPage({ params }) {
 
   return (
     <>
-      <Top title={`${ev.home.short} vs ${ev.away.short}`} sub={`${data.league?.flag || ""} ${data.league?.name || ""} · ${dayLabel(ev.date)} ${localTime(ev.date)}${ev.venue ? ` · ${ev.venue}` : ""}`}>
+      <Top title={`${ev.home.short} vs ${ev.away.short}`} sub={<span className="row" style={{ gap: 7 }}><LeagueFlag league={data.league} size={13} />{data.league?.name} · {dayLabel(ev.date)} {localTime(ev.date)}{ev.venue ? ` · ${ev.venue}` : ""}</span>}>
         <Link href="/matches" className="tile-btn desktop-only" aria-label="Back"><Icon name="back" /></Link>
       </Top>
 

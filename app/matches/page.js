@@ -5,12 +5,16 @@ import Icon from "../components/Icons";
 import { Top } from "../components/Shell";
 import { useBoard } from "../components/Providers";
 import { MatchRow } from "../components/Match";
-import { Skeleton, dayLabel } from "../components/ui";
+import { LeagueFlag, Skeleton, dayLabel } from "../components/ui";
 import { LEAGUES, LEAGUE_BY_ID, SPORT_LABEL } from "../../lib/leagues";
 
 const STATES = [["all", "All"], ["in", "Live"], ["pre", "Upcoming"], ["post", "Finished"]];
 const SORTS = [["time", "Kick-off"], ["confidence", "Best picks"]];
 const RANK = { High: 4, "Med-High": 3, Medium: 2, Low: 1, Skip: 0 };
+const STATE_ORDER = { in: 0, pre: 1, post: 2 };
+// live → upcoming (soonest first) → finished (most recent first)
+const byState = (a, b) => (STATE_ORDER[a.state] - STATE_ORDER[b.state])
+  || (a.state === "post" ? new Date(b.date) - new Date(a.date) : new Date(a.date) - new Date(b.date));
 
 function Matches() {
   const params = useSearchParams();
@@ -47,7 +51,7 @@ function Matches() {
   const list = useMemo(() => {
     let l = base.filter((e) => (state === "all" || e.state === state) && (league === "all" || e.league === league));
     if (sort === "confidence") l = [...l].sort((a, b) => (RANK[b.a?.pick?.tier] || 0) - (RANK[a.a?.pick?.tier] || 0) || (b.a?.pick?.safe || 0) - (a.a?.pick?.safe || 0));
-    else l = [...l].sort((a, b) => (a.state === "in" ? -1 : 0) - (b.state === "in" ? -1 : 0) || new Date(a.date) - new Date(b.date));
+    else l = [...l].sort(byState);
     return l;
   }, [base, state, league, sort]);
 
@@ -56,10 +60,9 @@ function Matches() {
     const order = LEAGUES.map((l) => l.id);
     const g = {};
     for (const e of list) (g[e.league] = g[e.league] || []).push(e);
-    return Object.entries(g).sort((a, b) => {
-      const la = a[1].some((e) => e.state === "in"), lb = b[1].some((e) => e.state === "in");
-      return (lb - la) || order.indexOf(a[0]) - order.indexOf(b[0]);
-    });
+    // leagues with a live game first, then ones with games still to play, finished-only last
+    const rank = (evs) => (evs.some((e) => e.state === "in") ? 0 : evs.some((e) => e.state === "pre") ? 1 : 2);
+    return Object.entries(g).sort((a, b) => rank(a[1]) - rank(b[1]) || order.indexOf(a[0]) - order.indexOf(b[0]));
   }, [list, sort]);
 
   const sports = [...new Set(events.map((e) => e.sport))];
@@ -97,7 +100,7 @@ function Matches() {
           <button className={`chip ${league === "all" ? "on" : ""}`} onClick={() => setLeague("all")}>All leagues</button>
           {LEAGUES.filter((l) => leagueCounts[l.id]).map((l) => (
             <button key={l.id} className={`chip ${league === l.id ? "on" : ""}`} onClick={() => setLeague(league === l.id ? "all" : l.id)}>
-              <span>{l.flag}</span>{l.name}<span className="n">{leagueCounts[l.id]}</span>
+              <LeagueFlag league={l} size={13} />{l.name}<span className="n">{leagueCounts[l.id]}</span>
             </button>
           ))}
         </div>
@@ -111,7 +114,7 @@ function Matches() {
         return (
           <section key={lid} className="league-block">
             <div className="league-head">
-              <span className="flag">{L.flag}</span><b>{L.name}</b>
+              <LeagueFlag league={L} size={16} /><b>{L.name}</b>
               <span className="muted">{evs.length} {evs.length === 1 ? "match" : "matches"}</span>
               {evs.some((e) => e.state === "in") && <span className="pill live">{evs.filter((e) => e.state === "in").length} live</span>}
             </div>
