@@ -13,10 +13,11 @@ export async function POST(request) {
   try { data = await request.json(); } catch { return NextResponse.json({ error: "Bad request" }, { status: 400 }); }
   if (!data?.event?.home || !data?.event?.away) return NextResponse.json({ error: "Match data missing" }, { status: 400 });
   const live = data.event.state === "in";
+  const lang = data.lang === "en" ? "en" : "fr";
   try {
     const brief = matchBrief(data);
     const { json, model } = await askJson({
-      system: INSIGHT_SYSTEM,
+      system: INSIGHT_SYSTEM + (lang === "fr" ? "\nWrite every text field in French (tutoiement, vocabulaire des parieurs francophones : cote, prono, double chance, remboursé si nul)." : "\nWrite every text field in English."),
       user: `${live ? "LIVE ANALYSIS — the match is in progress." : "FULL PRE-MATCH ANALYSIS."}\n\n${brief}`,
       schema: INSIGHT_SCHEMA,
       effort: live ? "low" : "medium",

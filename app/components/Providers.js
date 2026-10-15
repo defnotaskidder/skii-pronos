@@ -2,12 +2,21 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NotifyProvider, useNotify } from "./Notify";
 import { AuthProvider } from "./Auth";
+import { LangProvider, useT } from "./Lang";
+import { useAuth } from "./Auth";
 import { load, save } from "./store";
 import { product, hitChance } from "../../lib/coupon";
 
 // ---------------- board data (shared by every page) ----------------
 const DataCtx = createContext(null);
 export const useBoard = () => useContext(DataCtx);
+
+// True when nothing a row displays has changed, so the previous object (and its rendered row) can be reused.
+const sameEvent = (a, b) => a.state === b.state && a.detail === b.detail && a.minute === b.minute && a.postponed === b.postponed
+  && a.home?.score === b.home?.score && a.away?.score === b.away?.score && a.reds?.home === b.reds?.home && a.reds?.away === b.reds?.away
+  && a.odds?.home === b.odds?.home && a.odds?.draw === b.odds?.draw && a.odds?.away === b.odds?.away
+  && a.a?.pick?.key === b.a?.pick?.key && a.a?.pick?.odds === b.a?.pick?.odds && a.a?.pick?.tier === b.a?.pick?.tier && a.a?.pick?.safe === b.a?.pick?.safe
+  && a.a?.value?.key === b.a?.value?.key && a.a?.value?.ev === b.a?.value?.ev && a.done?.result === b.done?.result && a.done?.label === b.done?.label;
 
 // Full board (fixtures + picks) every 60–120 s; while anything is live or about to start, a
 // light live feed (/api/live) is merged in every 15 s so scores, minutes and states stay current.
@@ -20,11 +29,12 @@ function DataProvider({ children }) {
       const d = await r.json();
       const now = new Date().toISOString();
       const at = Date.now();
-      eventsRef.current = (d.events || []).map((e) => ({ ...e, _at: at }));
+      const prev = new Map(eventsRef.current.map((e) => [e.id, e]));
+      eventsRef.current = (d.events || []).map((e) => { const p = prev.get(e.id); return p && sameEvent(p, e) ? p : { ...e, _at: at }; });
       setState({ events: eventsRef.current, loading: false, error: d.error || "", updated: d.updated || now, liveAt: now });
       return eventsRef.current;
     } catch {
-      setState((s) => ({ ...s, loading: false, error: "Couldn't reach the server — retrying." }));
+      setState((s) => ({ ...s, loading: false, error: "offline" }));
       return null;
     }
   }, []);
@@ -106,6 +116,7 @@ export const useTrack = () => useContext(TrackCtx);
 
 function TrackProvider({ children }) {
   const notify = useNotify();
+  const { t } = useT();
   const [entries, setEntries] = useState([]);
   const busy = useRef(false);
   useEffect(() => { setEntries(load("skii-track", [])); }, []);
@@ -115,9 +126,9 @@ function TrackProvider({ children }) {
     const e = { id: `${entry.kind || "slip"}-${Date.now()}`, at: new Date().toISOString(), kind: "slip", ...entry, legs: entry.legs.map((l) => ({ ...l, result: null })) };
     set((cur) => [e, ...cur].slice(0, 100));
     notify?.followMany(e.legs.map((l) => ({ id: l.eventId, league: l.league, home: l.home, away: l.away, date: l.date })));
-    notify?.push({ kind: "coupon", title: `Tracking “${e.title}”`, body: `${e.legs.length} legs @ ${product(e.legs).toFixed(2)} — results are graded automatically.`, href: "/history", toastOnly: true });
+    notify?.push({ kind: "coupon", title: t("Tracking “{title}”", { title: e.title }), body: t("{n} legs @ {o} — results are graded automatically.", { n: e.legs.length, o: product(e.legs).toFixed(2) }), href: "/history", toastOnly: true });
     return e.id;
-  }, [set, notify]);
+  }, [set, notify, t]);
 
   // grade pending legs from final scores
   const settleAll = useCallback(async () => {
@@ -137,11 +148,11 @@ function TrackProvider({ children }) {
       if (notify?.prefs.results) {
         for (const e of finished) {
           const lost = e.legs.some((l) => l.result === "L");
-          notify.push({ kind: "result", title: lost ? `❌ “${e.title}” lost` : `✅ “${e.title}” won!`, body: lost ? "One or more legs failed." : `Paid @ ${product(e.legs.filter((l) => l.result === "W")).toFixed(2)}`, href: "/history", dedupe: `res-${e.id}` });
+          notify.push({ kind: "result", title: lost ? t("❌ “{title}” lost", { title: e.title }) : t("✅ “{title}” won!", { title: e.title }), body: lost ? t("One or more legs failed.") : t("Paid @ {o}", { o: product(e.legs.filter((l) => l.result === "W")).toFixed(2) }), href: "/history", dedupe: `res-${e.id}` });
         }
       }
     } catch { /* retry later */ } finally { busy.current = false; }
-  }, [entries, set, notify]);
+  }, [entries, set, notify, t]);
 
   useEffect(() => {
     settleAll();
@@ -153,21 +164,89 @@ function TrackProvider({ children }) {
     entries, track, settleAll,
     remove: (id) => set((cur) => cur.filter((e) => e.id !== id)),
     grade: (id, eventId, result) => set((cur) => cur.map((e) => e.id !== id ? e : { ...e, legs: e.legs.map((l) => l.eventId === eventId ? { ...l, result } : l) })),
+    setStake: (id, stake) => set((cur) => cur.map((e) => e.id !== id ? e : { ...e, stake: Math.max(0, Number(stake) || 0) })),
+    replaceAll: (list) => set(Array.isArray(list) ? list.slice(0, 100) : []),
     clear: () => set([]),
   }), [entries, track, settleAll, set]);
   return <TrackCtx.Provider value={value}>{children}</TrackCtx.Provider>;
 }
 
+// ---------------- account sync ----------------
+// Signed in: follows, tracked coupons, alert prefs, language and unit size live in the account.
+// On sign-in the server copy is merged with this browser's, then every change is written back.
+function SyncProvider({ children }) {
+  const auth = useAuth();
+  const notify = useNotify();
+  const track = useTrack();
+  const { lang, setLang } = useT();
+  const sig = useRef("");
+  const ready = useRef(false);
+  const userId = auth.user?.id || null;
+
+  useEffect(() => {
+    ready.current = false;
+    if (!userId) return;
+    let alive = true;
+    (async () => {
+      const token = await auth.token();
+      if (!token) return;
+      const r = await fetch("/api/sync", { headers: { authorization: `Bearer ${token}` } }).catch(() => null);
+      const d = r && r.ok ? await r.json() : null;
+      if (!alive || !d?.data) { ready.current = true; return; }
+      const s = d.data;
+      // merge: union of follows and coupons, server wins for prefs / language / unit
+      const follows = { ...(s.follows?.value || {}), ...notify.follows };
+      const byId = new Map([...(s.track?.value || []), ...track.entries].map((e) => [e.id, e]));
+      for (const e of track.entries) { const srv = (s.track?.value || []).find((x) => x.id === e.id); if (srv) byId.set(e.id, srv.legs.filter((l) => l.result).length >= e.legs.filter((l) => l.result).length ? { ...e, ...srv } : { ...srv, ...e }); }
+      const entries = [...byId.values()].sort((a, b) => new Date(b.at) - new Date(a.at));
+      notify.replaceFollows(follows);
+      track.replaceAll(entries);
+      if (s.prefs?.value) notify.replacePrefs(s.prefs.value);
+      if (s.lang?.value && s.lang.value !== lang) setLang(s.lang.value);
+      if (s.unit?.value !== undefined) save("skii-unit", s.unit.value);
+      sig.current = JSON.stringify([follows, entries, s.prefs?.value || notify.prefs, s.lang?.value || lang]);
+      ready.current = true;
+      // write the merged state so the other devices get this browser's additions
+      await fetch("/api/sync", { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ data: { follows, track: entries, prefs: s.prefs?.value || notify.prefs, lang: s.lang?.value || lang, unit: load("skii-unit", 1) } }) }).catch(() => {});
+    })();
+    return () => { alive = false; };
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // push changes (debounced)
+  useEffect(() => {
+    if (!userId || !ready.current) return;
+    const next = JSON.stringify([notify.follows, track.entries, notify.prefs, lang]);
+    if (next === sig.current) return;
+    const tmr = setTimeout(async () => {
+      const token = await auth.token();
+      if (!token) return;
+      sig.current = next;
+      await fetch("/api/sync", { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ data: { follows: notify.follows, track: track.entries, prefs: notify.prefs, lang, unit: load("skii-unit", 1) } }) }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(tmr);
+  }, [userId, notify.follows, track.entries, notify.prefs, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return children;
+}
+
+// Service worker: push alerts + "add to home screen".
+function ServiceWorker() {
+  useEffect(() => { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {}); }, []);
+  return null;
+}
+
 export default function Providers({ children }) {
   return (
+    <LangProvider>
     <AuthProvider>
       <NotifyProvider>
         <DataProvider>
           <SlipProvider>
-            <TrackProvider>{children}</TrackProvider>
+            <TrackProvider><SyncProvider>{children}</SyncProvider><ServiceWorker /></TrackProvider>
           </SlipProvider>
         </DataProvider>
       </NotifyProvider>
     </AuthProvider>
+    </LangProvider>
   );
 }

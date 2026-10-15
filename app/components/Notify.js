@@ -5,14 +5,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { load, save } from "./store";
 import Icon from "./Icons";
+import { useT } from "./Lang";
 
 const Ctx = createContext(null);
 export const useNotify = () => useContext(Ctx);
 
 const K = { items: "skii-notifs", prefs: "skii-notif-prefs", follows: "skii-follows" };
-export const DEFAULT_PREFS = { kickoff: true, goals: true, cards: true, final: true, coupon: true, results: true, browser: false };
+export const DEFAULT_PREFS = { kickoff: true, goals: true, cards: true, final: true, coupon: true, results: true, value: true, moves: true, browser: false };
 
 export function NotifyProvider({ children }) {
+  const { t } = useT();
   const [items, setItems] = useState([]);
   const [prefs, setPrefs] = useState(DEFAULT_PREFS);
   const [follows, setFollows] = useState({}); // id -> { id, league, home, away, date }
@@ -54,9 +56,9 @@ export function NotifyProvider({ children }) {
     if (follows[ev.id]) unfollow(ev.id);
     else {
       follow(ev);
-      push({ kind: "follow", title: `Following ${ev.home?.short || ev.home} – ${ev.away?.short || ev.away}`, body: "You'll get kick-off, goal and full-time alerts.", href: `/match/${ev.league}/${ev.id}`, toastOnly: true });
+      push({ kind: "follow", title: t("Following {home} – {away}", { home: ev.home?.short || ev.home, away: ev.away?.short || ev.away }), body: t("You'll get kick-off, goal and full-time alerts."), href: `/match/${ev.league}/${ev.id}`, toastOnly: true });
     }
-  }, [follows, follow, unfollow, push]);
+  }, [follows, follow, unfollow, push, t]);
   const followMany = useCallback((list) => setFollowsP((cur) => {
     const n = { ...cur };
     for (const ev of list) n[ev.id] = { id: ev.id, league: ev.league, home: ev.home, away: ev.away, date: ev.date };
@@ -90,12 +92,12 @@ export function NotifyProvider({ children }) {
           const href = `/match/${g.league}/${g.id}`;
           if (g.state === "in" || (g.state === "pre" && new Date(g.date) - Date.now() < 20 * 60e3)) soon = true;
           if (prev) {
-            if (prev.state === "pre" && g.state === "in" && pf.kickoff) push({ kind: "kickoff", title: `Kick-off: ${g.home} – ${g.away}`, body: "The match has started.", href, dedupe: `ko-${id}` });
+            if (prev.state === "pre" && g.state === "in" && pf.kickoff) push({ kind: "kickoff", title: t("Kick-off: {home} – {away}", { home: g.home, away: g.away }), body: t("The match has started."), href, dedupe: `ko-${id}` });
             const goalH = (g.hs ?? 0) > (prev.hs ?? 0), goalA = (g.as ?? 0) > (prev.as ?? 0);
-            if ((goalH || goalA) && pf.goals) push({ kind: "goal", title: `⚽ Goal ${goalH ? g.home : g.away}!`, body: `${label}${g.minute ? ` · ${g.minute}'` : ""}`, href, dedupe: `g-${id}-${g.hs}-${g.as}` });
+            if ((goalH || goalA) && pf.goals) push({ kind: "goal", title: t("⚽ Goal {team}!", { team: goalH ? g.home : g.away }), body: `${label}${g.minute ? ` · ${g.minute}'` : ""}`, href, dedupe: `g-${id}-${g.hs}-${g.as}` });
             const rH = g.reds?.home || 0, rA = g.reds?.away || 0;
-            if ((rH > (prev.reds?.home || 0) || rA > (prev.reds?.away || 0)) && pf.cards) push({ kind: "red", title: `🟥 Red card — ${rH > (prev.reds?.home || 0) ? g.home : g.away}`, body: label, href, dedupe: `r-${id}-${rH}-${rA}` });
-            if (prev.state !== "post" && g.state === "post" && pf.final) push({ kind: "final", title: `Full time: ${label}`, body: "Check your picks in History.", href, dedupe: `ft-${id}` });
+            if ((rH > (prev.reds?.home || 0) || rA > (prev.reds?.away || 0)) && pf.cards) push({ kind: "red", title: t("🟥 Red card — {team}", { team: rH > (prev.reds?.home || 0) ? g.home : g.away }), body: label, href, dedupe: `r-${id}-${rH}-${rA}` });
+            if (prev.state !== "post" && g.state === "post" && pf.final) push({ kind: "final", title: t("Full time: {label}", { label }), body: t("Check your picks in History."), href, dedupe: `ft-${id}` });
           }
           snap.current[id] = { state: g.state, hs: g.hs, as: g.as, reds: g.reds };
         }
@@ -104,7 +106,7 @@ export function NotifyProvider({ children }) {
     };
     tick();
     return () => { stop = true; clearTimeout(timer); };
-  }, [follows, push]);
+  }, [follows, push, t]);
 
   // drop follows for games more than a day old
   useEffect(() => {
@@ -116,6 +118,7 @@ export function NotifyProvider({ children }) {
     items, unread: items.filter((x) => !x.read).length, push, markAllRead, clear, remove,
     prefs, setPref: (k, v) => setPrefsP((c) => ({ ...c, [k]: v })), requestBrowser,
     follows, isFollowed, toggleFollow, followMany, unfollow,
+    replacePrefs: (p) => setPrefsP({ ...DEFAULT_PREFS, ...(p || {}) }), replaceFollows: (f) => setFollowsP(f && typeof f === "object" ? f : {}),
   }), [items, push, prefs, follows, isFollowed, toggleFollow, followMany, unfollow]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

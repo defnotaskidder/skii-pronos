@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Icon from "./components/Icons";
 import { Top } from "./components/Shell";
 import { useBoard, useTrack } from "./components/Providers";
+import { useT } from "./components/Lang";
 import { CouponActions, CouponCard, chanceText, useCouponOfTheDay } from "./components/Coupon";
 import { LiveCard, MatchRow, PickItem } from "./components/Match";
 import { Skeleton, pct } from "./components/ui";
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const { events, live, loading, error } = useBoard();
   const { data: coupon, error: couponError } = useCouponOfTheDay();
   const { entries } = useTrack();
+  const { t, lang, locale } = useT();
 
   const now = Date.now();
   const next24 = useMemo(() => events.filter((e) => e.state === "pre" && new Date(e.date) - now < 24 * 3600e3 && new Date(e.date) > now), [events]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -32,21 +34,21 @@ export default function Dashboard() {
     return { n: legs.length, w, rate: legs.length ? w / legs.length : 0 };
   }, [entries]);
 
-  const today = new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+  const today = new Date().toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <>
-      <Top title="Dashboard" sub={`${today} · ${next24.length} matches in the next 24h across ${leaguesToday} leagues`} />
-      {error && <div className="error" style={{ marginBottom: 16 }}>{error}</div>}
+      <Top title={t("Dashboard")} sub={`${today} · ${t("{n} matches in the next 24h across {m} leagues", { n: next24.length, m: leaguesToday })}`} />
+      {error && <div className="error" style={{ marginBottom: 16 }}>{error === "offline" ? t("Couldn't reach the server — retrying.") : error}</div>}
 
       <div className="grid g-dash">
         <div className="stack">
           {coupon ? (
-            <CouponCard coupon={coupon.safe} title="Coupon du jour" eyebrow={`Safest legs today${coupon.reviewed ? " · AI-checked" : ""}`}
-              footer={<CouponActions coupon={coupon.safe} title="Coupon du jour" />} />
+            <CouponCard coupon={coupon.safe} title={t("Coupon du jour")} eyebrow={t("Safest legs today") + (coupon.reviewed ? t(" · AI-checked") : "")}
+              footer={<CouponActions coupon={coupon.safe} title={t("Coupon du jour")} />} />
           ) : (
             <section className="card hero glow">
-              <div className="eyebrow">Coupon du jour</div>
+              <div className="eyebrow">{t("Coupon du jour")}</div>
               {couponError ? <div className="error" style={{ marginTop: 12 }}>{couponError}</div> : <div style={{ marginTop: 14 }}><Skeleton rows={3} h={58} /></div>}
             </section>
           )}
@@ -54,10 +56,10 @@ export default function Dashboard() {
           {live.length > 0 && (
             <section>
               <div className="card-head" style={{ padding: "0 4px" }}>
-                <span className="pill live">LIVE</span><h2>Live now</h2>
-                <Link href="/live" className="link">All {live.length} <Icon name="chevron" size={14} /></Link>
+                <span className="pill live">{t("LIVE")}</span><h2>{t("Live now")}</h2>
+                <Link href="/live" className="link">{t("All {n}", { n: live.length })} <Icon name="chevron" size={14} /></Link>
               </div>
-              <div className="hscroll stagger">{live.map((e) => <LiveCard key={e.id} ev={e} />)}</div>
+              <div className="hscroll stagger">{live.slice(0, 12).map((e) => <LiveCard key={e.id} ev={e} />)}</div>
             </section>
           )}
         </div>
@@ -66,31 +68,31 @@ export default function Dashboard() {
           <div className="grid g-2 stagger" style={{ gap: 14 }}>
             <Link href="/live" className="card tight stat">
               <span className="stat-ico live"><Icon name="live" /></span>
-              <span className="big num"><CountUp value={live.length} /></span><span className="lbl">Live now</span>
+              <span className="big num"><CountUp value={live.length} /></span><span className="lbl">{t("Live now")}</span>
             </Link>
             <Link href="/matches" className="card tight stat">
               <span className="stat-ico cyan"><Icon name="ball" /></span>
-              <span className="big num"><CountUp value={next24.length} /></span><span className="lbl">Next 24 hours</span>
+              <span className="big num"><CountUp value={next24.length} /></span><span className="lbl">{t("Next 24 hours")}</span>
             </Link>
             <div className="card tight stat">
               <span className="stat-ico green"><Icon name="shield" /></span>
-              <span className="big num"><CountUp value={next24.filter((e) => TIER_RANK[e.a?.pick?.tier] >= 3).length} /></span><span className="lbl">Strong picks</span>
+              <span className="big num"><CountUp value={next24.filter((e) => TIER_RANK[e.a?.pick?.tier] >= 3).length} /></span><span className="lbl">{t("Strong picks")}</span>
             </div>
             <div className="card tight stat">
               <span className="stat-ico"><Icon name="trend" /></span>
-              <span className="big num"><CountUp value={values.length} /></span><span className="lbl">Value spots</span>
+              <span className="big num"><CountUp value={values.length} /></span><span className="lbl">{t("Value spots")}</span>
             </div>
           </div>
 
           <section className="card">
             <div className="card-head">
-              <h3>Your record<br /><span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>Last 7 days</span></h3>
+              <h3>{t("Your record")}<br /><span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>{t("Last 7 days")}</span></h3>
               <span className="link" style={{ fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{record.n ? pct(record.rate) : "—"}</span>
             </div>
             <div className="bar"><i style={{ width: `${record.rate * 100}%` }} /></div>
             <div className="row" style={{ marginTop: 14, justifyContent: "space-between" }}>
-              <span className="muted" style={{ fontSize: 13 }}>{record.n ? `${record.w} won of ${record.n} graded legs` : "Track a coupon to start your record."}</span>
-              <Link href="/history" className="btn soft sm">History</Link>
+              <span className="muted" style={{ fontSize: 13 }}>{record.n ? t("{w} won of {n} graded legs", { w: record.w, n: record.n }) : t("Track a coupon to start your record.")}</span>
+              <Link href="/history" className="btn soft sm">{t("History")}</Link>
             </div>
           </section>
 
@@ -98,9 +100,9 @@ export default function Dashboard() {
             <div className="row" style={{ flexWrap: "nowrap" }}>
               <span className="stat-ico" style={{ margin: 0 }}><Icon name="bolt" /></span>
               <div style={{ minWidth: 0 }}>
-                <b style={{ fontSize: 15 }}>Grosse cote du jour</b>
+                <b style={{ fontSize: 15 }}>{t("Grosse cote du jour")}</b>
                 <div className="muted" style={{ fontSize: 12.5 }}>
-                  {coupon?.grosse?.legs?.length ? `${coupon.grosse.legs.length} legs · ${chanceText(coupon.grosse.chance)}` : "Big odds, best chance · generator inside"}
+                  {coupon?.grosse?.legs?.length ? t("{n} legs · {chance}", { n: coupon.grosse.legs.length, chance: chanceText(coupon.grosse.chance, lang) }) : t("Big odds, best chance · generator inside")}
                 </div>
               </div>
               <span className="spacer" />
@@ -112,26 +114,26 @@ export default function Dashboard() {
 
       <div className="grid g-2" style={{ marginTop: 18 }} data-reveal>
         <section className="card">
-          <div className="card-head"><h2>Top picks today</h2><Link href="/matches" className="link">All matches <Icon name="chevron" size={14} /></Link></div>
+          <div className="card-head"><h2>{t("Top picks today")}</h2><Link href="/matches" className="link">{t("All matches")} <Icon name="chevron" size={14} /></Link></div>
           {loading ? <Skeleton rows={4} h={58} /> : topPicks.length ? (
             <div className="plist stagger">{topPicks.map((e) => <PickItem key={e.id} ev={e} m={e.a.pick} />)}</div>
-          ) : <div className="empty">No high-confidence picks in the next 24 hours.</div>}
+          ) : <div className="empty">{t("No high-confidence picks in the next 24 hours.")}</div>}
         </section>
         <section className="card">
-          <div className="card-head"><h2>Value spots</h2><span className="pill violet" style={{ marginLeft: "auto" }}>model beats the price</span></div>
+          <div className="card-head"><h2>{t("Value spots")}</h2><span className="pill violet" style={{ marginLeft: "auto" }}>{t("model beats the price")}</span></div>
           {loading ? <Skeleton rows={4} h={58} /> : values.length ? (
             <div className="plist stagger">{values.map((e) => <PickItem key={e.id} ev={e} m={e.a.value} right={<span className="pill green">+{Math.round(e.a.value.ev * 100)}%</span>} />)}</div>
-          ) : <div className="empty">No price beats the model right now. That's normal, value is rare.</div>}
+          ) : <div className="empty">{t("No price beats the model right now. That's normal, value is rare.")}</div>}
         </section>
       </div>
 
       {bigGames.length > 0 && (
         <section style={{ marginTop: 22 }} data-reveal>
-          <div className="card-head" style={{ padding: "0 4px" }}><h2>Big games</h2><Link href="/matches" className="link">See all <Icon name="chevron" size={14} /></Link></div>
+          <div className="card-head" style={{ padding: "0 4px" }}><h2>{t("Big games")}</h2><Link href="/matches" className="link">{t("See all")} <Icon name="chevron" size={14} /></Link></div>
           {bigGames.map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
         </section>
       )}
-      <p className="note" style={{ marginTop: 24 }}>Probabilities come from bookmaker odds with the margin removed, blended with a league-table and form model. “≈” prices are estimates: take them on 1xBet only at or above the shown odds. 18+, bet responsibly.</p>
+      <p className="note" style={{ marginTop: 24 }}>{t("Probabilities come from bookmaker odds with the margin removed, blended with a league-table and form model. “≈” prices are estimates: take them on 1xBet only at or above the shown odds. 18+, bet responsibly.")}</p>
     </>
   );
 }

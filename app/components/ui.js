@@ -1,22 +1,29 @@
 "use client";
 import { useEffect, useId, useState } from "react";
 import { CountUp } from "./Motion";
+import { translate } from "../../lib/i18n";
+
+// Set by LangProvider; every date/time helper and fixed label below follows it.
+let locale = "fr-FR";
+export const setLocale = (l) => { locale = l || "fr-FR"; };
+export const currentLang = () => locale.slice(0, 2);
+const tt = (key, vars) => translate(currentLang(), key, vars);
 
 export const pct = (x) => (x === null || x === undefined ? "–" : `${Math.round(x * 100)}%`);
 export const odds2 = (x) => (x ? Number(x).toFixed(2) : "–");
 
 export function localTime(iso) {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 export function dayLabel(iso) {
   const d = new Date(iso), now = new Date();
   const key = (x) => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`;
   const t = new Date(now); const y = new Date(now); const tm = new Date(now);
   y.setDate(now.getDate() - 1); tm.setDate(now.getDate() + 1);
-  if (key(d) === key(t)) return "Today";
-  if (key(d) === key(tm)) return "Tomorrow";
-  if (key(d) === key(y)) return "Yesterday";
-  return d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+  if (key(d) === key(t)) return tt("Today");
+  if (key(d) === key(tm)) return tt("Tomorrow");
+  if (key(d) === key(y)) return tt("Yesterday");
+  return d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
 }
 export function ago(iso) {
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -33,12 +40,17 @@ export function LeagueFlag({ league, size = 18 }) {
   return <img className="lflag" src={`https://flagcdn.com/w40/${league.cc}.png`} alt="" width={Math.round(size * 1.33)} height={size} loading="lazy" />;
 }
 
+// ESPN's logos are 500px (~150 KB each); its resizer serves the same logo at the size shown (~5 KB).
+export const logoSrc = (url, size) => (/^https?:\/\/a\.espncdn\.com\/i\//.test(url || "")
+  ? `https://a.espncdn.com/combiner/i?img=${url.replace(/^https?:\/\/a\.espncdn\.com/, "")}&w=${size * 2}&h=${size * 2}`
+  : url);
+
 export function TeamLogo({ team, size = 28 }) {
   const [broken, setBroken] = useState(false);
   const initials = (team?.abbr || team?.short || team?.name || "?").slice(0, 3).toUpperCase();
   return (
     <span className="logo" style={{ width: size, height: size }}>
-      {team?.logo && !broken ? <img src={team.logo} alt="" loading="lazy" width={size} height={size} onError={() => setBroken(true)} /> : initials}
+      {team?.logo && !broken ? <img src={logoSrc(team.logo, size)} alt="" loading="lazy" decoding="async" width={size} height={size} onError={() => setBroken(true)} /> : initials}
     </span>
   );
 }
@@ -72,7 +84,7 @@ export function Ring({ value = 0, size = 52, stroke = 5, label, fontSize }) {
 
 export function Tier({ t }) {
   if (!t) return null;
-  return <span className={`tier tier-${t}`}>{t === "Med-High" ? "Med-high" : t}</span>;
+  return <span className={`tier tier-${t}`}>{tt(t === "Med-High" ? "Med-high" : t)}</span>;
 }
 
 export function Form({ form }) {
@@ -91,17 +103,25 @@ export function TriBar({ h, d, a, labels }) {
       </div>
       <div className="tri-legend">
         <span><b>{pct(h)}</b>{labels?.[0]}</span>
-        {d ? <span><b>{pct(d)}</b>Draw</span> : null}
+        {d ? <span><b>{pct(d)}</b>{tt("Draw")}</span> : null}
         <span><b>{pct(a)}</b>{labels?.[1]}</span>
       </div>
     </div>
   );
 }
 
-// Re-render every `ms` (live minutes keep ticking between data refreshes).
-export function useNow(ms = 15000) {
+// Re-render every 15 s (live minutes keep ticking between data refreshes). One shared timer
+// for the whole page, however many live rows there are.
+const tickers = new Set();
+let tickTimer = null;
+export function useNow() {
   const [now, setNow] = useState(() => Date.now());
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), ms); return () => clearInterval(t); }, [ms]);
+  useEffect(() => {
+    const fn = () => setNow(Date.now());
+    tickers.add(fn);
+    if (!tickTimer) tickTimer = setInterval(() => tickers.forEach((f) => f()), 15000);
+    return () => { tickers.delete(fn); if (!tickers.size) { clearInterval(tickTimer); tickTimer = null; } };
+  }, []);
   return now;
 }
 
@@ -109,8 +129,8 @@ export function useNow(ms = 15000) {
 // (`_at`) so it never looks frozen; other sports show the feed's own detail (Q3 5:12, 2nd…).
 export function liveLabel(ev, now = Date.now()) {
   const d = ev.detail || "";
-  if (/^HT$|half ?time/i.test(d)) return "HT";
-  if (ev.sport !== "soccer" || !ev.minute) return d || "LIVE";
+  if (/^HT$|half ?time/i.test(d)) return tt("HT");
+  if (ev.sport !== "soccer" || !ev.minute) return d || tt("LIVE");
   if (/pen|shootout|break|end of/i.test(d)) return d;
   const cap = ev.period >= 4 ? 120 : ev.period === 3 ? 105 : ev.period === 2 ? 90 : 45;
   if (ev.minute > cap) return `${cap}+${ev.minute - cap}'`;
@@ -118,11 +138,15 @@ export function liveLabel(ev, now = Date.now()) {
   return m > cap ? `${cap}+'` : `${m}'`;
 }
 
+function LivePill({ ev }) {
+  const now = useNow();
+  return <span className="pill live">{liveLabel(ev, now)}</span>;
+}
+
 export function StatusPill({ ev }) {
-  const now = useNow(ev.state === "in" ? 15000 : 600000);
-  if (ev.postponed) return <span className="pill amber">PPD</span>;
-  if (ev.state === "in") return <span className="pill live">{liveLabel(ev, now)}</span>;
-  if (ev.state === "post") return <span className="pill ft">{ev.detail || "FT"}</span>;
+  if (ev.postponed) return <span className="pill amber">{tt("PPD")}</span>;
+  if (ev.state === "in") return <LivePill ev={ev} />;
+  if (ev.state === "post") return <span className="pill ft">{/^FT$/i.test(ev.detail || "") || !ev.detail ? tt("FT") : ev.detail}</span>;
   return <span className="pill">{localTime(ev.date)}</span>;
 }
 

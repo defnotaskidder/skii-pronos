@@ -9,7 +9,7 @@ export async function GET(request) {
   const days = Math.min(4, Math.max(1, Number(request.nextUrl.searchParams.get("days")) || 2));
   try {
     const events = await boardForClient(days);
-    return NextResponse.json({ events, updated: new Date().toISOString() });
+    return NextResponse.json({ events, updated: new Date().toISOString() }, { headers: { "cache-control": "public, s-maxage=15, stale-while-revalidate=45" } });
   } catch (e) {
     return NextResponse.json({ error: e.message, events: [] }, { status: 502 });
   }

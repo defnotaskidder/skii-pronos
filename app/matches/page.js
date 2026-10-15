@@ -1,11 +1,12 @@
 "use client";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Icon from "../components/Icons";
 import { Top } from "../components/Shell";
 import { useBoard } from "../components/Providers";
+import { useT } from "../components/Lang";
 import { MatchRow } from "../components/Match";
-import { LeagueFlag, Skeleton, dayLabel } from "../components/ui";
+import { LeagueFlag, Skeleton, dayLabel, localTime } from "../components/ui";
 import { LEAGUES, LEAGUE_BY_ID, SPORT_LABEL } from "../../lib/leagues";
 
 const STATES = [["all", "All"], ["in", "Live"], ["pre", "Upcoming"], ["post", "Finished"]];
@@ -22,6 +23,7 @@ const byState = (a, b) => (STATE_ORDER[a.state] - STATE_ORDER[b.state])
 function Matches() {
   const params = useSearchParams();
   const { events, loading, error, updated } = useBoard();
+  const { t } = useT();
   const [state, setState] = useState("all");
   const [day, setDay] = useState("all");
   const [sport, setSport] = useState("all");
@@ -31,6 +33,16 @@ function Matches() {
   const [cat, setCat] = useState("all");
   const [open, setOpen] = useState({}); // leagues expanded past PER_LEAGUE
   const [flatMax, setFlatMax] = useState(120);
+  const [shownLeagues, setShownLeagues] = useState(12); // more leagues render as you scroll
+  const moreRef = useRef(null);
+  useEffect(() => { setShownLeagues(12); setFlatMax(120); }, [state, day, sport, league, q, cat, sort]);
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((en) => { if (en[0].isIntersecting) setShownLeagues((n) => n + 12); }, { rootMargin: "600px" });
+    io.observe(el);
+    return () => io.disconnect();
+  });
 
   useEffect(() => { setQ(params.get("q") || ""); if (params.get("league")) setLeague(params.get("league")); }, [params]);
 
@@ -38,7 +50,7 @@ function Matches() {
     const seen = new Map();
     for (const e of events) { const l = dayLabel(e.date); if (!seen.has(l)) seen.set(l, new Date(e.date)); }
     return [...seen.entries()].sort((a, b) => a[1] - b[1]).map(([l]) => l);
-  }, [events]);
+  }, [events]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const base = useMemo(() => events.filter((e) => {
     if (sport !== "all" && e.sport !== sport) return false;
@@ -76,37 +88,37 @@ function Matches() {
 
   return (
     <>
-      <Top title="Matches" sub={`${new Set(events.map((e) => e.league)).size} competitions, loaded automatically${updated ? ` · updated ${new Date(updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}`} />
+      <Top title={t("Matches")} sub={t("{n} competitions, loaded automatically", { n: new Set(events.map((e) => e.league)).size }) + (updated ? t(" · updated {time}", { time: localTime(updated) }) : "")} />
       <div className="stack" style={{ gap: 12, marginBottom: 18 }}>
         <div className="row">
           <div className="seg">
             {STATES.map(([k, l]) => (
               <button key={k} className={`${state === k ? "on" : ""} ${state === k && k === "in" ? "grad" : ""}`} onClick={() => setState(k)}>
-                {k === "in" && <span className="pill live" style={{ padding: 0, background: "none", height: "auto" }} />}{l}<span className="n">{counts[k]}</span>
+                {k === "in" && <span className="pill live" style={{ padding: 0, background: "none", height: "auto" }} />}{t(l)}<span className="n">{counts[k]}</span>
               </button>
             ))}
           </div>
           <span className="spacer" />
           <div className="search" style={{ width: 260, maxWidth: "100%" }}>
             <Icon name="search" size={16} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Team or league" aria-label="Search matches" />
-            {q && <button className="dim" onClick={() => setQ("")} aria-label="Clear search"><Icon name="x" size={14} /></button>}
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Team or league")} aria-label={t("Search")} />
+            {q && <button className="dim" onClick={() => setQ("")} aria-label={t("Clear search")}><Icon name="x" size={14} /></button>}
           </div>
           <div className="seg">
-            {SORTS.map(([k, l]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{l}</button>)}
+            {SORTS.map(([k, l]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t(l)}</button>)}
           </div>
         </div>
         <div className="chips">
-          <button className={`chip ${day === "all" ? "on" : ""}`} onClick={() => setDay("all")}>All days</button>
+          <button className={`chip ${day === "all" ? "on" : ""}`} onClick={() => setDay("all")}>{t("All days")}</button>
           {days.map((d) => <button key={d} className={`chip ${day === d ? "on" : ""}`} onClick={() => setDay(d)}>{d}</button>)}
           <span style={{ width: 1, background: "var(--line-2)", margin: "4px 4px", flex: "none" }} />
-          <button className={`chip ${sport === "all" ? "on" : ""}`} onClick={() => setSport("all")}>All sports</button>
-          {sports.map((s) => <button key={s} className={`chip ${sport === s ? "on" : ""}`} onClick={() => setSport(s)}>{SPORT_LABEL[s]}</button>)}
+          <button className={`chip ${sport === "all" ? "on" : ""}`} onClick={() => setSport("all")}>{t("All sports")}</button>
+          {sports.map((s) => <button key={s} className={`chip ${sport === s ? "on" : ""}`} onClick={() => setSport(s)}>{t(SPORT_LABEL[s])}</button>)}
           <span style={{ width: 1, background: "var(--line-2)", margin: "4px 4px", flex: "none" }} />
-          {CATS.map(([k, l]) => <button key={k} className={`chip ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}>{l}</button>)}
+          {CATS.map(([k, l]) => <button key={k} className={`chip ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}>{t(l)}</button>)}
         </div>
         <div className="chips">
-          <button className={`chip ${league === "all" ? "on" : ""}`} onClick={() => setLeague("all")}>All leagues</button>
+          <button className={`chip ${league === "all" ? "on" : ""}`} onClick={() => setLeague("all")}>{t("All leagues")}</button>
           {LEAGUES.filter((l) => leagueCounts[l.id]).map((l) => (
             <button key={l.id} className={`chip ${league === l.id ? "on" : ""}`} onClick={() => setLeague(league === l.id ? "all" : l.id)}>
               <LeagueFlag league={l} size={13} />{l.name}<span className="n">{leagueCounts[l.id]}</span>
@@ -115,30 +127,30 @@ function Matches() {
         </div>
       </div>
 
-      {error && <div className="error" style={{ marginBottom: 14 }}>{error}</div>}
+      {error && <div className="error" style={{ marginBottom: 14 }}>{error === "offline" ? t("Couldn't reach the server — retrying.") : error}</div>}
       {loading ? <Skeleton rows={7} /> : list.length === 0 ? (
-        <div className="empty"><Icon name="ball" />No matches for these filters.</div>
-      ) : grouped ? grouped.map(([lid, evs]) => {
+        <div className="empty"><Icon name="ball" />{t("No matches for these filters.")}</div>
+      ) : grouped ? grouped.slice(0, shownLeagues).map(([lid, evs]) => {
         const L = LEAGUE_BY_ID[lid];
         return (
           <section key={lid} className="league-block">
             <div className="league-head">
               <LeagueFlag league={L} size={16} /><b>{L.name}</b>
-              <span className="muted">{evs.length} {evs.length === 1 ? "match" : "matches"}</span>
-              {evs.some((e) => e.state === "in") && <span className="pill live">{evs.filter((e) => e.state === "in").length} live</span>}
+              <span className="muted">{evs.length === 1 ? t("{n} match", { n: 1 }) : t("{n} matches", { n: evs.length })}</span>
+              {evs.some((e) => e.state === "in") && <span className="pill live">{t("{n} live", { n: evs.filter((e) => e.state === "in").length })}</span>}
             </div>
             {(open[lid] || league !== "all" ? evs : evs.slice(0, PER_LEAGUE)).map((e) => <MatchRow key={e.id} ev={e} />)}
             {evs.length > PER_LEAGUE && league === "all" && (
               <button className="btn ghost sm" style={{ margin: "2px 0 6px" }} onClick={() => setOpen((o) => ({ ...o, [lid]: !o[lid] }))}>
-                <Icon name={open[lid] ? "down" : "chevron"} />{open[lid] ? "Show fewer" : `Show all ${evs.length} ${L.name} matches`}
+                <Icon name={open[lid] ? "down" : "chevron"} />{open[lid] ? t("Show fewer") : t("Show all {n} {league} matches", { n: evs.length, league: L.name })}
               </button>
             )}
           </section>
         );
-      }) : (
+      }).concat(grouped.length > shownLeagues ? [<div key="more" ref={moreRef} style={{ height: 1 }} />] : []) : (
         <>
           {list.slice(0, flatMax).map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
-          {list.length > flatMax && <button className="btn soft block" onClick={() => setFlatMax((n) => n + 120)}>Show more ({list.length - flatMax} left)</button>}
+          {list.length > flatMax && <button className="btn soft block" onClick={() => setFlatMax((n) => n + 120)}>{t("Show more ({n} left)", { n: list.length - flatMax })}</button>}
         </>
       )}
     </>

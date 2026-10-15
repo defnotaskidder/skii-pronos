@@ -2,7 +2,7 @@
 
 /* drifting background lights */
 .aurora { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-.aurora i { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .5; will-change: transform; }
+.aurora i { position: absolute; border-radius: 50%; opacity: .6; will-change: transform; }
 .aurora .a1 { width: 520px; height: 520px; right: -120px; top: -160px; background: radial-gradient(circle, rgba(236, 72, 153, .35), transparent 65%); animation: drift1 26s ease-in-out infinite alternate; }
 .aurora .a2 { width: 620px; height: 620px; left: -200px; top: 25%; background: radial-gradient(circle, rgba(124, 58, 237, .35), transparent 65%); animation: drift2 32s ease-in-out infinite alternate; }
 .aurora .a3 { width: 480px; height: 480px; left: 45%; bottom: -220px; background: radial-gradient(circle, rgba(34, 211, 238, .14), transparent 65%); animation: drift3 38s ease-in-out infinite alternate; }
@@ -12,7 +12,7 @@
 
 /* page transition: app/template.js re-mounts on every navigation */
 .page-enter { animation: page-in .5s var(--ease) backwards; }
-@keyframes page-in { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
 /* staggered entrance: direct children of .stagger rise one after another */
 .stagger > * { animation: rise .55s var(--ease) backwards; }
@@ -55,8 +55,8 @@ a.card:hover, .lcard:hover, .pitem:hover { transform: translateY(-3px); box-shad
 .odd:active, .chip:active, .icon-btn:active, .tile-btn:active, .btn:active:not(:disabled) { transform: scale(.95); }
 
 /* rotating gradient border on the hero card */
-.card.glow::after { background: conic-gradient(from var(--ang), #7c3aed, #c026d3, #ec4899, #22d3ee, #7c3aed); animation: spin-border 6s linear infinite; opacity: .85; }
-@keyframes spin-border { to { --ang: 360deg; } }
+.card.glow::after { animation: glow-breathe 4.5s ease-in-out infinite alternate; }
+@keyframes glow-breathe { from { opacity: .5; } to { opacity: 1; } }
 
 /* buttons */
 .btn.primary { position: relative; overflow: hidden; isolation: isolate; background-size: 160% 100%; transition: background-position .5s var(--ease), transform .2s var(--spring), box-shadow .3s var(--ease); }

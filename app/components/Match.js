@@ -1,8 +1,10 @@
 "use client";
 import Link from "next/link";
+import { memo } from "react";
 import Icon from "./Icons";
 import { useSlip } from "./Providers";
 import { useNotify } from "./Notify";
+import { useT } from "./Lang";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 import { useFlash } from "./Motion";
 import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, liveLabel, localTime, odds2, pct, useNow } from "./ui";
@@ -28,18 +30,20 @@ const stop = (fn) => (e) => { e.preventDefault(); e.stopPropagation(); fn(); };
 
 export function FollowBtn({ ev, small }) {
   const n = useNotify();
+  const { t } = useT();
   if (ev.state === "post") return null;
   const on = n.isFollowed(ev.id);
   return (
-    <button className={`icon-btn ${on ? "on" : ""}`} style={small ? { width: 30, height: 30 } : undefined} aria-label={on ? "Unfollow match" : "Follow match"}
-      title={on ? "Alerts on" : "Get goal alerts"} onClick={stop(() => n.toggleFollow(ev))}>
+    <button className={`icon-btn ${on ? "on" : ""}`} style={small ? { width: 30, height: 30 } : undefined} aria-label={on ? t("Unfollow match") : t("Follow match")}
+      title={on ? t("Alerts on") : t("Get goal alerts")} onClick={stop(() => n.toggleFollow(ev))}>
       <Icon name="bell" />
     </button>
   );
 }
 
-export function MatchRow({ ev, showLeague = false }) {
+function MatchRowInner({ ev, showLeague = false }) {
   const slip = useSlip();
+  const { t, tm } = useT();
   const a = ev.a;
   const pick = a?.pick;
   const o = ev.odds;
@@ -62,14 +66,14 @@ export function MatchRow({ ev, showLeague = false }) {
       </div>
       <div className="teams">
         {["home", "away"].map((s) => {
-          const t = ev[s];
+          const tm_ = ev[s];
           const lost = done && ((s === "home" && hs < as) || (s === "away" && as < hs));
           return (
             <div key={s} className={`team ${lost ? "lost" : ""}`}>
-              <TeamLogo team={t} size={24} />
-              <span className="nm">{t.short}</span>
-              {ev.reds?.[s] > 0 && <span className="rc" title="Red card" />}
-              {ev.state !== "pre" && <Score v={t.score} className="sc" />}
+              <TeamLogo team={tm_} size={24} />
+              <span className="nm">{tm_.short}</span>
+              {ev.reds?.[s] > 0 && <span className="rc" title={t("Red card")} />}
+              {ev.state !== "pre" && <Score v={tm_.score} className="sc" />}
             </div>
           );
         })}
@@ -90,24 +94,24 @@ export function MatchRow({ ev, showLeague = false }) {
         {pick && !done ? (
           <>
             <span className="txt">
-              <b>{pick.label}</b>
+              <b>{tm(pick.label)}</b>
               <small>{pick.estimated ? "≈ " : "@ "}{odds2(pick.odds)} · <Tier t={pick.tier} /></small>
             </span>
             <Ring value={pick.safe ?? pick.p} size={46} stroke={4.5} />
-            <button className={`icon-btn ${slip.has(ev.id, pick.key) ? "on" : ""}`} aria-label="Add pick to coupon" onClick={stop(() => slip.toggle(toLeg(ev, pick)))}>
+            <button className={`icon-btn ${slip.has(ev.id, pick.key) ? "on" : ""}`} aria-label={t("Add pick to coupon")} onClick={stop(() => slip.toggle(toLeg(ev, pick)))}>
               <Icon name={slip.has(ev.id, pick.key) ? "check" : "plus"} />
             </button>
           </>
         ) : done && ev.done ? (
           <>
             <span className="txt">
-              <b>{ev.done.label}</b>
-              <small>Engine pick {ev.done.estimated ? "≈ " : "@ "}{odds2(ev.done.odds)}</small>
+              <b>{tm(ev.done.label)}</b>
+              <small>{t("Engine pick")} {ev.done.estimated ? "≈ " : "@ "}{odds2(ev.done.odds)}</small>
             </span>
             <span className={`result-badge r-${ev.done.result || "P"}`}>{ev.done.result === "W" ? "✓" : ev.done.result === "L" ? "✗" : ev.done.result === "V" ? "V" : "…"}</span>
           </>
         ) : (
-          <span className="txt"><small>{done ? "Final" : ev.postponed ? "Postponed" : "No prices yet"}</small></span>
+          <span className="txt"><small>{done ? t("Final") : ev.postponed ? t("Postponed") : t("No prices yet")}</small></span>
         )}
         <FollowBtn ev={ev} />
       </div>
@@ -115,10 +119,11 @@ export function MatchRow({ ev, showLeague = false }) {
   );
 }
 
-export function LiveCard({ ev }) {
+function LiveCardInner({ ev }) {
+  const { t, tm } = useT();
   const L = LEAGUE_BY_ID[ev.league];
   const goal = useFlash(`${ev.home.score}-${ev.away.score}`, 1600);
-  const now = useNow(15000);
+  const now = useNow();
   return (
     <Link href={href(ev)} className={`lcard ${goal ? "goal" : ""}`}>
       <div className="row" style={{ gap: 8 }}>
@@ -133,22 +138,23 @@ export function LiveCard({ ev }) {
       </div>
       {ev.a?.pick ? (
         <div className="row" style={{ justifyContent: "space-between", fontSize: 12.5 }}>
-          <span className="muted">Pre-match pick</span>
-          <b style={{ maxWidth: 150, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.a.pick.label}</b>
+          <span className="muted">{t("Pre-match pick")}</span>
+          <b style={{ maxWidth: 150, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tm(ev.a.pick.label)}</b>
         </div>
-      ) : <div className="muted" style={{ fontSize: 12.5 }}>{ev.sport === "soccer" ? "Tap for live analysis" : ev.detail}</div>}
+      ) : <div className="muted" style={{ fontSize: 12.5 }}>{ev.sport === "soccer" ? t("Tap for live analysis") : ev.detail}</div>}
     </Link>
   );
 }
 
-export function PickItem({ ev, m, right }) {
+function PickItemInner({ ev, m, right }) {
   const slip = useSlip();
+  const { t, tm } = useT();
   const on = slip.has(ev.id, m.key);
   return (
     <Link href={href(ev)} className="pitem">
       <span className="logos"><TeamLogo team={ev.home} size={32} /><TeamLogo team={ev.away} size={32} /></span>
       <span className="mid">
-        <b>{m.label}</b>
+        <b>{tm(m.label)}</b>
         <small>{ev.home.short} – {ev.away.short} · {dayLabel(ev.date)} {localTime(ev.date)}</small>
       </span>
       {right}
@@ -156,11 +162,16 @@ export function PickItem({ ev, m, right }) {
         <div className="od num">{m.estimated ? "≈" : ""}{odds2(m.odds)}</div>
         <Tier t={m.tier} />
       </span>
-      <button className={`icon-btn ${on ? "on" : ""}`} aria-label="Add to coupon" onClick={stop(() => slip.toggle(toLeg(ev, m)))}>
+      <button className={`icon-btn ${on ? "on" : ""}`} aria-label={t("Add to coupon")} onClick={stop(() => slip.toggle(toLeg(ev, m)))}>
         <Icon name={on ? "check" : "plus"} />
       </button>
     </Link>
   );
 }
 
+// Rows only re-render when their own event object changes (DataProvider keeps unchanged
+// events identical between refreshes), so a board refresh doesn't redraw 800 rows.
+export const MatchRow = memo(MatchRowInner);
+export const LiveCard = memo(LiveCardInner);
+export const PickItem = memo(PickItemInner);
 export { pct };

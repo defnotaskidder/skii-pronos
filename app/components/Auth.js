@@ -52,6 +52,7 @@ export function AuthProvider({ children }) {
       if (error) throw error;
     },
     signOut: () => sb?.auth.signOut(),
+    token: async () => { try { return (await sb?.auth.getSession())?.data?.session?.access_token || null; } catch { return null; } },
   }), [sb, ready, user, providers]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

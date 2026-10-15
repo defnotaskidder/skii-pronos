@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { board } from "../../../lib/espn";
 import { analysedBoard } from "../../../lib/board";
 import { syncBoard, dailySettle, dbEnabled } from "../../../lib/db";
+import { learnFromGames } from "../../../lib/ratings";
+import { tick } from "../../../lib/alerts";
+import { telegramEnabled, telegramSetup } from "../../../lib/messaging";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Daily backstop (vercel.json): snapshot picks for the next two days and grade the last three,
-// even if nobody opened the site. Visitors keep both up to date the rest of the time.
+// Scheduled by vercel.json: morning (coupons + posts) and evening (results). Also a safety net:
+// snapshot picks for the next two days, grade the last three, update team ratings, make sure
+// the Telegram webhook is registered.
 export async function GET(request) {
   const secret = process.env.CRON_SECRET;
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
@@ -15,10 +19,15 @@ export async function GET(request) {
   }
   if (!dbEnabled()) return NextResponse.json({ ok: false, db: false });
   const started = Date.now();
+  const when = request.nextUrl.searchParams.get("when") || "morning";
   const rows = await analysedBoard(2);
   await syncBoard(rows); // even if the board came from the short memo: save picks, grade yesterday/today
   const older = await board(-2, -3).catch(() => []); // 3 and 2 days ago
   await syncBoard(older.filter((e) => e.state === "post").map((ev) => ({ ev, analysis: null })));
+  const rated = await learnFromGames([...rows.map((r) => r.ev), ...older]);
   const coupons = await dailySettle();
-  return NextResponse.json({ ok: true, games: rows.length, older: older.length, couponsChecked: coupons, ms: Date.now() - started });
+  let telegram = null;
+  if (telegramEnabled()) { try { telegram = await telegramSetup(); } catch (e) { telegram = { error: e.message }; } }
+  const alerts = await tick({ force: when === "evening" ? "evening" : "morning" }).catch((e) => ({ error: e.message }));
+  return NextResponse.json({ ok: true, when, games: rows.length, older: older.length, rated, couponsChecked: coupons, telegram, alerts, ms: Date.now() - started });
 }

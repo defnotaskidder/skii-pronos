@@ -23,7 +23,8 @@ export async function GET(request) {
       analysis = analyse({ ...ev, state: "pre" }, tables[league] || {});
     }
     const live = liveAnalyse(ev, analysis, sum.stats);
-    return NextResponse.json({ event: ev, analysis, live, ...strip(sum), league: LEAGUE_BY_ID[league] });
+    const ratings = row?.ratings?.home && row?.ratings?.away ? { home: row.ratings.home.rating, away: row.ratings.away.rating, games: Math.min(row.ratings.home.games, row.ratings.away.games) } : null;
+    return NextResponse.json({ event: ev, analysis, live, ratings, ...strip(sum), league: LEAGUE_BY_ID[league] });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 502 });
   }
