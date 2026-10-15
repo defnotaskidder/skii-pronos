@@ -23,6 +23,19 @@ async function dataUri(url) {
     return null;
   }
 }
+// The renderer needs a font it can read. The file ships next to this route (bundled), with the
+// copy in public/fonts as a fallback.
+let fontCache = null;
+async function fontData() {
+  if (fontCache) return fontCache;
+  try {
+    fontCache = await fetch(new URL("./outfit-bold.ttf", import.meta.url)).then((r) => r.arrayBuffer());
+  } catch {
+    const site = process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://skii-pronos.vercel.app");
+    fontCache = await fetch(`${site}/fonts/outfit-bold.ttf`).then((r) => r.arrayBuffer());
+  }
+  return fontCache;
+}
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("slow")), ms))]);
 
 // Link-preview image per match: logos, kick-off, and the engine's pick when the board is warm.
@@ -37,13 +50,13 @@ export default async function Image({ params }) {
     pick = row?.analysis?.pick || null;
     if (!ev && row) ev = row.ev;
   } catch { /* no pick on the card */ }
-  try { fonts = [{ name: "Outfit", data: await readFile(path.join(process.cwd(), "public", "fonts", "outfit-bold.ttf")), weight: 700, style: "normal" }]; } catch { fonts = []; }
+  fonts = [{ name: "Outfit", data: await fontData(), weight: 700, style: "normal" }];
   if (ev) [home, away] = await Promise.all([dataUri(ev.home?.logo), dataUri(ev.away?.logo)]);
 
   const tz = process.env.SITE_TZ || "Africa/Abidjan";
   const when = ev ? new Date(ev.date).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: tz }) : "";
   const score = ev && ev.state !== "pre" ? `${ev.home.score ?? 0} – ${ev.away.score ?? 0}` : "VS";
-  const font = fonts.length ? "Outfit" : "sans-serif";
+  const font = "Outfit";
 
   const team = (tm, uri) => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 360 }}>
@@ -55,7 +68,7 @@ export default async function Image({ params }) {
   );
 
   // Render inside try/catch: a failure shows its cause with ?debug=1 and otherwise serves the site card.
-  const debug = true; // TEMP: surface the renderer error in production
+  const debug = false;
   try {
   const img = new ImageResponse(
     (
