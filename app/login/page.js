@@ -59,7 +59,7 @@ export default function Login() {
           </div>
         ) : (
           <>
-            {mode !== "reset" && (
+            {mode !== "reset" && auth.providers.google && (
               <>
                 <button className="btn soft block" onClick={() => auth.google().catch((e) => setMsg({ err: e.message, ok: "" }))}>
                   <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.2 14.6 2.2 12 2.2 6.6 2.2 2.2 6.6 2.2 12s4.4 9.8 9.8 9.8c5.7 0 9.4-4 9.4-9.6 0-.6-.1-1.1-.2-1.6H12z" /></svg>
@@ -78,7 +78,7 @@ export default function Login() {
             </form>
             <div className="row" style={{ justifyContent: "space-between", marginTop: 16, fontSize: 13 }}>
               {mode === "signin" ? <button className="muted" onClick={() => setMode("reset")}>Forgot password?</button> : <button className="muted" onClick={() => setMode("signin")}>Back to sign in</button>}
-              {mode !== "signup" ? <button style={{ color: "#c4b5fd", fontWeight: 650 }} onClick={() => setMode("signup")}>Create an account</button> : null}
+              {mode !== "signup" && auth.providers.signup !== false ? <button style={{ color: "#c4b5fd", fontWeight: 650 }} onClick={() => setMode("signup")}>Create an account</button> : null}
             </div>
           </>
         )}

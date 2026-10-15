@@ -3,7 +3,7 @@
 // server reports the project's public settings (see /api/auth-config); until then the site
 // works fully signed-out and the sign-in page explains what's missing.
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getSupabase } from "../../lib/supabase";
+import { authProviders, getSupabase } from "../../lib/supabase";
 
 const Ctx = createContext(null);
 export const useAuth = () => useContext(Ctx);
@@ -12,6 +12,7 @@ export function AuthProvider({ children }) {
   const [sb, setSb] = useState(null);
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
+  const [providers, setProviders] = useState({});
 
   useEffect(() => {
     let sub, alive = true;
@@ -23,6 +24,7 @@ export function AuthProvider({ children }) {
         if (!alive) return;
         setUser(data.session?.user || null);
         sub = client.auth.onAuthStateChange((_e, session) => setUser(session?.user || null)).data.subscription;
+        authProviders().then((p) => alive && setProviders(p));
       }
       setReady(true);
     });
@@ -30,7 +32,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(() => ({
-    enabled: !!sb, ready, user,
+    enabled: !!sb, ready, user, providers,
     name: user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || null,
     signIn: async (email, password) => {
       const { error } = await sb.auth.signInWithPassword({ email, password });
@@ -50,7 +52,7 @@ export function AuthProvider({ children }) {
       if (error) throw error;
     },
     signOut: () => sb?.auth.signOut(),
-  }), [sb, ready, user]);
+  }), [sb, ready, user, providers]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
