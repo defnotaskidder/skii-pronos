@@ -54,7 +54,10 @@ export default async function Image({ params }) {
     </div>
   );
 
-  return new ImageResponse(
+  // Render inside try/catch: a failure shows its cause with ?debug=1 and otherwise serves the site card.
+  const debug = true; // TEMP: surface the renderer error in production
+  try {
+  const img = new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#07091a", color: "#f3f4fb", fontFamily: font, fontWeight: 700 }}>
         <div style={{ display: "flex", alignItems: "center", padding: "44px 64px 0" }}>
@@ -89,4 +92,11 @@ export default async function Image({ params }) {
     ),
     { ...size, fonts },
   );
+  const buf = await img.arrayBuffer();
+  return new Response(buf, { headers: { "content-type": "image/png", "cache-control": "public, max-age=600, s-maxage=600" } });
+  } catch (e) {
+    console.error("[og]", e?.stack || e);
+    if (debug || process.env.OG_DEBUG === "true") return new Response(`OG error: ${e?.stack || e}`, { status: 200, headers: { "content-type": "text/plain" } });
+    try { return new Response(await readFile(path.join(process.cwd(), "public", "og-default.png")), { headers: { "content-type": "image/png" } }); } catch { return new Response("", { status: 500 }); }
+  }
 }
