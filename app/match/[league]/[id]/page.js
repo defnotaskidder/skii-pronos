@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Icon from "../../../components/Icons";
 import { Top } from "../../../components/Shell";
 import { useSlip } from "../../../components/Providers";
@@ -105,13 +105,7 @@ export default function MatchPage({ params }) {
 
       <div className="grid g-match">
         <div style={{ minWidth: 0 }}>
-          <div className="tabs" role="tablist">
-            {tabs.map(([k, l]) => (
-              <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
-                {k === "live" && ev.state === "in" && <span className="pill live" style={{ background: "none", padding: 0 }} />}{l}
-              </button>
-            ))}
-          </div>
+          <Tabs tabs={tabs} tab={tab} setTab={setTab} live={ev.state === "in"} />
           {tab === "prono" && <Prono ev={ev} a={a} />}
           {tab === "live" && <LiveTab data={data} />}
           {tab === "markets" && <Markets ev={ev} a={a} />}
@@ -133,6 +127,26 @@ export default function MatchPage({ params }) {
         </div>
       </div>
     </>
+  );
+}
+
+// Tab bar with a gradient underline that slides to the active tab.
+function Tabs({ tabs, tab, setTab, live }) {
+  const ref = useRef(null);
+  const [ind, setInd] = useState(null);
+  useLayoutEffect(() => {
+    const el = ref.current?.querySelector("button.on");
+    if (el) setInd({ x: el.offsetLeft + 10, w: el.offsetWidth - 20 });
+  }, [tab, tabs.length]);
+  return (
+    <div className="tabs" role="tablist" ref={ref}>
+      {tabs.map(([k, l]) => (
+        <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
+          {k === "live" && live && <span className="pill live" style={{ background: "none", padding: 0 }} />}{l}
+        </button>
+      ))}
+      {ind && <span className="tab-ind" style={{ width: ind.w, transform: `translateX(${ind.x}px)` }} />}
+    </div>
   );
 }
 
@@ -240,7 +254,7 @@ function StatBar({ label, h, a }) {
 function LiveTab({ data }) {
   const { event: ev, live, stats, timeline, commentary } = data;
   return (
-    <div className="fade-in stack" style={{ gap: 14 }}>
+    <div className="stagger stack" style={{ gap: 14 }}>
       {live && (
         <section className="card">
           <div className="card-head"><span className="pill live">LIVE MODEL</span><h3>{live.minute}' re-pricing</h3></div>

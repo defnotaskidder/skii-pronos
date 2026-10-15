@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Icon from "./Icons";
+import Logo, { LogoMark } from "./Logo";
 import { useBoard, useSlip, useTrack } from "./Providers";
 import { useNotify, NICON } from "./Notify";
 import { useAuth } from "./Auth";
 import { ago, odds2, pct, TeamLogo, Tier } from "./ui";
+import { CountUp, MotionLayer, useFlash } from "./Motion";
 import { couponText } from "../../lib/coupon";
 
 const NAV = [
@@ -33,16 +35,17 @@ export default function Shell({ children }) {
 
   return (
     <div className="app">
+      <MotionLayer />
       <aside className="side">
         <Link href="/" className="brand">
-          <span className="brand-mark">S</span>
-          <span><div className="brand-name">Skii Pronos</div><div className="brand-sub">Engine · live odds · AI</div></span>
+          <Logo size={40} sub="Engine · live odds · AI" animate />
         </Link>
         <form className="search" onSubmit={(e) => { e.preventDefault(); router.push(`/matches?q=${encodeURIComponent(q)}`); }}>
           <Icon name="search" size={16} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search team or league" aria-label="Search" />
           <span className="kbd">↵</span>
         </form>
+        <SideNav path={path}>
         <div className="nav-label">Navigation</div>
         <nav className="nav">
           {NAV.map((n) => (
@@ -61,6 +64,7 @@ export default function Shell({ children }) {
             </Link>
           ))}
         </nav>
+        </SideNav>
         <div className="side-foot">
           <Link href={auth.user ? "/settings" : "/login"} className="me">
             <span className="avatar">{auth.user ? (auth.name || "?")[0].toUpperCase() : <Icon name="user" size={17} />}{auth.user && <span className="dot" />}</span>
@@ -94,7 +98,7 @@ export default function Shell({ children }) {
 export function Top({ title, sub, children }) {
   return (
     <header className="top">
-      <Link href="/" className="brand-mark mobile-only" style={{ width: 36, height: 36, fontSize: 16 }}>S</Link>
+      <Link href="/" className="mobile-only top-logo" aria-label="Skii Pronos home"><LogoMark size={38} animate /></Link>
       <div style={{ minWidth: 0 }}>
         <h1>{title}</h1>
         {sub && <div className="sub">{sub}</div>}
@@ -117,8 +121,34 @@ function AvatarTile() {
   );
 }
 
+// Both sidebar menus share one gradient pill that slides to the active link.
+function SideNav({ path, children }) {
+  const ref = useRef(null);
+  const [ind, setInd] = useState(null);
+  const [ready, setReady] = useState(false);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const box = ref.current, el = box?.querySelector(".nav a.on");
+      const b = el?.getBoundingClientRect();
+      if (!b?.height) { setInd(null); return; } // no active link, or sidebar hidden on small screens
+      setInd({ y: b.top - box.getBoundingClientRect().top, h: b.height });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [path]);
+  useEffect(() => { if (ind && !ready) requestAnimationFrame(() => setReady(true)); }, [ind, ready]);
+  return (
+    <div ref={ref} className="navs">
+      <span className="nav-ind" style={{ transform: `translateY(${ind?.y ?? 0}px)`, height: ind?.h ?? 42, opacity: ind ? 1 : 0, transition: ready ? undefined : "none" }} />
+      {children}
+    </div>
+  );
+}
+
 function Bell() {
   const n = useNotify();
+  const wiggle = useFlash(n.unread) && n.unread > 0;
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -129,7 +159,7 @@ function Bell() {
   }, [open]);
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button className="tile-btn" aria-label="Notifications" onClick={() => { setOpen((o) => !o); }}>
+      <button className={`tile-btn ${wiggle ? "has-new" : ""}`} aria-label="Notifications" onClick={() => { setOpen((o) => !o); }}>
         <Icon name="bell" />
         {n.unread > 0 && <span className="badge-dot" />}
       </button>
@@ -163,6 +193,7 @@ function SlipDrawer() {
   const slip = useSlip();
   const track = useTrack();
   const [copied, setCopied] = useState(false);
+  const bump = useFlash(slip.legs.length, 600);
   if (!slip.legs.length && !slip.open) return null;
   const copy = async () => {
     try { await navigator.clipboard.writeText(couponText({ legs: slip.legs }, "MON COUPON")); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard blocked */ }
@@ -170,7 +201,7 @@ function SlipDrawer() {
   return (
     <>
       {!slip.open && slip.legs.length > 0 && (
-        <button className="slip-fab" onClick={() => slip.setOpen(true)}>
+        <button className={`slip-fab ${bump ? "bump" : ""}`} onClick={() => slip.setOpen(true)}>
           <span className="n">{slip.legs.length}</span>
           <span style={{ textAlign: "left", lineHeight: 1.15 }}>My coupon<br /><small style={{ opacity: .8, fontWeight: 600 }}>@ {slip.odds.toFixed(2)}</small></span>
         </button>
@@ -202,7 +233,7 @@ function SlipDrawer() {
             </div>
             <div className="card flat tight" style={{ marginBottom: 12 }}>
               <div className="row">
-                <div><div className="eyebrow">Total odds</div><div className="total-odds num">{slip.odds.toFixed(2)}</div></div>
+                <div><div className="eyebrow">Total odds</div><div className="total-odds num"><CountUp value={slip.odds} decimals={2} /></div></div>
                 <span className="spacer" />
                 <div style={{ textAlign: "right" }}><div className="eyebrow">Hit chance</div><div style={{ fontSize: 22, fontWeight: 800 }}>{pct(slip.chance)}</div></div>
               </div>

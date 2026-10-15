@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Icon from "../components/Icons";
+import Logo from "../components/Logo";
 import { useAuth } from "../components/Auth";
 
 export default function Login() {
@@ -38,8 +39,7 @@ export default function Login() {
     <div style={{ minHeight: "calc(100vh - 40px)", display: "grid", placeItems: "center", padding: "30px 0" }}>
       <div className="card hero glow" style={{ width: "100%", maxWidth: 440, padding: 28 }}>
         <div className="brand" style={{ padding: 0, marginBottom: 22 }}>
-          <span className="brand-mark">S</span>
-          <span><div className="brand-name">Skii Pronos</div><div className="brand-sub">Your picks, coupons and alerts — everywhere</div></span>
+          <Logo size={46} sub="Your picks, coupons and alerts, everywhere" animate />
         </div>
         <h1 style={{ margin: "0 0 4px", fontSize: 26, letterSpacing: "-.025em" }}>{mode === "signup" ? "Create your account" : mode === "reset" ? "Reset password" : "Welcome back"}</h1>
         <p className="muted" style={{ margin: "0 0 20px" }}>{mode === "signup" ? "Free. Save your history and get alerts on every device." : mode === "reset" ? "We'll email you a reset link." : "Sign in to sync your coupons and alerts."}</p>

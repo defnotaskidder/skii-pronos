@@ -7,6 +7,7 @@ import { useBoard, useTrack } from "./components/Providers";
 import { CouponActions, CouponCard, useCouponOfTheDay } from "./components/Coupon";
 import { LiveCard, MatchRow, PickItem } from "./components/Match";
 import { Skeleton, pct } from "./components/ui";
+import { CountUp } from "./components/Motion";
 import { LEAGUE_BY_ID } from "../lib/leagues";
 
 const TIER_RANK = { High: 4, "Med-High": 3, Medium: 2, Low: 1, Skip: 0 };
@@ -56,28 +57,28 @@ export default function Dashboard() {
                 <span className="pill live">LIVE</span><h2>Live now</h2>
                 <Link href="/live" className="link">All {live.length} <Icon name="chevron" size={14} /></Link>
               </div>
-              <div className="hscroll">{live.map((e) => <LiveCard key={e.id} ev={e} />)}</div>
+              <div className="hscroll stagger">{live.map((e) => <LiveCard key={e.id} ev={e} />)}</div>
             </section>
           )}
         </div>
 
         <div className="stack">
-          <div className="grid g-2" style={{ gap: 14 }}>
+          <div className="grid g-2 stagger" style={{ gap: 14 }}>
             <Link href="/live" className="card tight stat">
               <span className="stat-ico live"><Icon name="live" /></span>
-              <span className="big num">{live.length}</span><span className="lbl">Live now</span>
+              <span className="big num"><CountUp value={live.length} /></span><span className="lbl">Live now</span>
             </Link>
             <Link href="/matches" className="card tight stat">
               <span className="stat-ico cyan"><Icon name="ball" /></span>
-              <span className="big num">{next24.length}</span><span className="lbl">Next 24 hours</span>
+              <span className="big num"><CountUp value={next24.length} /></span><span className="lbl">Next 24 hours</span>
             </Link>
             <div className="card tight stat">
               <span className="stat-ico green"><Icon name="shield" /></span>
-              <span className="big num">{next24.filter((e) => TIER_RANK[e.a?.pick?.tier] >= 3).length}</span><span className="lbl">Strong picks</span>
+              <span className="big num"><CountUp value={next24.filter((e) => TIER_RANK[e.a?.pick?.tier] >= 3).length} /></span><span className="lbl">Strong picks</span>
             </div>
             <div className="card tight stat">
               <span className="stat-ico"><Icon name="trend" /></span>
-              <span className="big num">{values.length}</span><span className="lbl">Value spots</span>
+              <span className="big num"><CountUp value={values.length} /></span><span className="lbl">Value spots</span>
             </div>
           </div>
 
@@ -99,30 +100,30 @@ export default function Dashboard() {
                 <span className="stat-ico" style={{ margin: 0 }}><Icon name="bolt" /></span>
                 <div><b style={{ fontSize: 15 }}>Bold coupon</b><div className="muted" style={{ fontSize: 12.5 }}>{coupon.bold.legs.length} legs · ~{pct(coupon.bold.chance)} chance</div></div>
                 <span className="spacer" />
-                <span className="total-odds num grad-text" style={{ fontSize: 30 }}>{coupon.bold.odds.toFixed(2)}</span>
+                <span className="total-odds num grad-text" style={{ fontSize: 30 }}><CountUp value={coupon.bold.odds} decimals={2} /></span>
               </div>
             </Link>
           )}
         </div>
       </div>
 
-      <div className="grid g-2" style={{ marginTop: 18 }}>
+      <div className="grid g-2" style={{ marginTop: 18 }} data-reveal>
         <section className="card">
           <div className="card-head"><h2>Top picks today</h2><Link href="/matches" className="link">All matches <Icon name="chevron" size={14} /></Link></div>
           {loading ? <Skeleton rows={4} h={58} /> : topPicks.length ? (
-            <div className="plist">{topPicks.map((e) => <PickItem key={e.id} ev={e} m={e.a.pick} />)}</div>
+            <div className="plist stagger">{topPicks.map((e) => <PickItem key={e.id} ev={e} m={e.a.pick} />)}</div>
           ) : <div className="empty">No high-confidence picks in the next 24 hours.</div>}
         </section>
         <section className="card">
           <div className="card-head"><h2>Value spots</h2><span className="pill violet" style={{ marginLeft: "auto" }}>model beats the price</span></div>
           {loading ? <Skeleton rows={4} h={58} /> : values.length ? (
-            <div className="plist">{values.map((e) => <PickItem key={e.id} ev={e} m={e.a.value} right={<span className="pill green">+{Math.round(e.a.value.ev * 100)}%</span>} />)}</div>
+            <div className="plist stagger">{values.map((e) => <PickItem key={e.id} ev={e} m={e.a.value} right={<span className="pill green">+{Math.round(e.a.value.ev * 100)}%</span>} />)}</div>
           ) : <div className="empty">No price beats the model right now. That's normal, value is rare.</div>}
         </section>
       </div>
 
       {bigGames.length > 0 && (
-        <section style={{ marginTop: 22 }}>
+        <section style={{ marginTop: 22 }} data-reveal>
           <div className="card-head" style={{ padding: "0 4px" }}><h2>Big games</h2><Link href="/matches" className="link">See all <Icon name="chevron" size={14} /></Link></div>
           {bigGames.map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
         </section>

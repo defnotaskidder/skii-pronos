@@ -7,6 +7,7 @@ import { useNotify } from "./Notify";
 import { load, save } from "./store";
 import { Ring, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "./ui";
 import { couponText } from "../../lib/coupon";
+import { CountUp } from "./Motion";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 
 // Fetch the day's coupons once per page view; announce a new one once per day.
@@ -50,7 +51,7 @@ export function CouponActions({ coupon, title }) {
 
 export function CouponLegs({ legs, compact = false }) {
   return (
-    <div className="ticket-legs">
+    <div className="ticket-legs stagger">
       {legs.map((l) => (
         <Link key={l.eventId} href={`/match/${l.league}/${l.eventId}`} className="leg">
           <span style={{ display: "flex" }}>
@@ -87,7 +88,7 @@ export function CouponCard({ coupon, title, eyebrow, compact = false, glow = tru
           <div className="row" style={{ gap: 14, flexWrap: "nowrap" }}>
             <div style={{ textAlign: "right" }}>
               <div className="eyebrow">Total odds</div>
-              <div className="total-odds num grad-text">{coupon.odds.toFixed(2)}</div>
+              <div className="total-odds num grad-text"><CountUp value={coupon.odds} decimals={2} duration={900} /></div>
             </div>
             <Ring value={coupon.chance} size={compact ? 62 : 70} stroke={6} />
           </div>

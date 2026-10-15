@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import Icon from "../components/Icons";
 import { Top } from "../components/Shell";
 import { useTrack } from "../components/Providers";
-import { TeamLogo, dayLabel, localTime, odds2, pct } from "../components/ui";
+import { TeamLogo, dayLabel, localTime, odds2 } from "../components/ui";
 import { product } from "../../lib/coupon";
+import { CountUp } from "../components/Motion";
 
 function status(legs) {
   if (legs.some((l) => l.result === "L")) return "lost";
@@ -35,11 +36,11 @@ export default function History() {
         <button className="tile-btn" aria-label="Grade now" title="Grade finished games now" onClick={settleAll}><Icon name="refresh" /></button>
       </Top>
 
-      <div className="grid g-4" style={{ marginBottom: 18 }}>
-        <div className="card tight stat"><span className="stat-ico cyan"><Icon name="target" /></span><span className="big num">{pct(stats.hit)}</span><span className="lbl">Leg hit rate · {stats.legs} graded</span></div>
-        <div className="card tight stat"><span className="stat-ico green"><Icon name="trophy" /></span><span className="big num">{pct(stats.couponHit)}</span><span className="lbl">Coupons won · {stats.coupons} settled</span></div>
-        <div className="card tight stat"><span className="stat-ico"><Icon name="trend" /></span><span className="big num" style={{ color: stats.units >= 0 ? "#86efac" : "#fda4af" }}>{stats.units >= 0 ? "+" : ""}{stats.units.toFixed(2)}<small>u</small></span><span className="lbl">Flat 1u per leg</span></div>
-        <div className="card tight stat"><span className="stat-ico"><Icon name="chart" /></span><span className="big num">{stats.roi >= 0 ? "+" : ""}{Math.round(stats.roi * 100)}<small>%</small></span><span className="lbl">ROI per leg</span></div>
+      <div className="grid g-4 stagger" style={{ marginBottom: 18 }}>
+        <div className="card tight stat"><span className="stat-ico cyan"><Icon name="target" /></span><span className="big num"><CountUp value={stats.hit * 100} suffix="%" /></span><span className="lbl">Leg hit rate · {stats.legs} graded</span></div>
+        <div className="card tight stat"><span className="stat-ico green"><Icon name="trophy" /></span><span className="big num"><CountUp value={stats.couponHit * 100} suffix="%" /></span><span className="lbl">Coupons won · {stats.coupons} settled</span></div>
+        <div className="card tight stat"><span className="stat-ico"><Icon name="trend" /></span><span className="big num" style={{ color: stats.units >= 0 ? "#86efac" : "#fda4af" }}><CountUp value={stats.units} decimals={2} prefix={stats.units >= 0 ? "+" : ""} /><small>u</small></span><span className="lbl">Flat 1u per leg</span></div>
+        <div className="card tight stat"><span className="stat-ico"><Icon name="chart" /></span><span className="big num"><CountUp value={stats.roi * 100} prefix={stats.roi >= 0 ? "+" : ""} /><small>%</small></span><span className="lbl">ROI per leg</span></div>
       </div>
 
       <div className="row" style={{ marginBottom: 14 }}>

@@ -1,5 +1,6 @@
 "use client";
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
+import { CountUp } from "./Motion";
 
 export const pct = (x) => (x === null || x === undefined ? "–" : `${Math.round(x * 100)}%`);
 export const odds2 = (x) => (x ? Number(x).toFixed(2) : "–");
@@ -45,7 +46,10 @@ export function TeamLogo({ team, size = 28 }) {
 export function Ring({ value = 0, size = 52, stroke = 5, label, fontSize }) {
   const id = useId().replace(/:/g, "");
   const r = (size - stroke) / 2, c = 2 * Math.PI * r;
-  const v = Math.max(0, Math.min(1, value || 0));
+  const target = Math.max(0, Math.min(1, value || 0));
+  // start empty, then sweep to the value (the CSS transition does the easing)
+  const [v, setV] = useState(0);
+  useEffect(() => { const r = requestAnimationFrame(() => setV(target)); return () => cancelAnimationFrame(r); }, [target]);
   return (
     <span className="ring" style={{ width: size, height: size }}>
       <svg width={size} height={size}>
@@ -60,7 +64,7 @@ export function Ring({ value = 0, size = 52, stroke = 5, label, fontSize }) {
         <circle cx={size / 2} cy={size / 2} r={r} stroke={`url(#g${id})`} strokeWidth={stroke} fill="none" strokeLinecap="round"
           strokeDasharray={c} strokeDashoffset={c * (1 - v)} style={{ transition: "stroke-dashoffset .6s cubic-bezier(.22,.61,.36,1)" }} />
       </svg>
-      <span className="val" style={{ fontSize: fontSize || Math.round(size * 0.27) }}>{label ?? pct(v)}</span>
+      <span className="val" style={{ fontSize: fontSize || Math.round(size * 0.27) }}>{label ?? <CountUp value={target * 100} suffix="%" duration={1000} />}</span>
     </span>
   );
 }

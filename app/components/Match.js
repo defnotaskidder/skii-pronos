@@ -4,6 +4,7 @@ import Icon from "./Icons";
 import { useSlip } from "./Providers";
 import { useNotify } from "./Notify";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
+import { useFlash } from "./Motion";
 import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "./ui";
 
 export const href = (ev) => `/match/${ev.league}/${ev.id}`;
@@ -15,6 +16,12 @@ export function toLeg(ev, m) {
     home: ev.home?.short, away: ev.away?.short, homeLogo: ev.home?.logo, awayLogo: ev.away?.logo,
     key: m.key, label: m.label, odds: m.odds, p: m.p, safe: m.safe ?? m.p, ev: m.ev ?? null, tier: m.tier || null, estimated: !!m.estimated,
   };
+}
+
+// A score that flashes when it changes (goal!).
+function Score({ v, className = "" }) {
+  const f = useFlash(v);
+  return <span className={`${className} num ${f ? "flash" : ""}`}>{v ?? "–"}</span>;
 }
 
 const stop = (fn) => (e) => { e.preventDefault(); e.stopPropagation(); fn(); };
@@ -45,9 +52,10 @@ export function MatchRow({ ev, showLeague = false }) {
   const done = ev.state === "post";
   const hs = ev.home.score, as = ev.away.score;
   const L = LEAGUE_BY_ID[ev.league];
+  const goal = useFlash(`${hs}-${as}`, 1600) && ev.state === "in";
 
   return (
-    <Link href={href(ev)} className={`mrow fade-in ${ev.state === "in" ? "live" : ""}`}>
+    <Link href={href(ev)} className={`mrow fade-in ${ev.state === "in" ? "live" : ""} ${goal ? "goal" : ""}`}>
       <div className="when">
         <StatusPill ev={ev} />
         <small>{ev.state === "pre" ? dayLabel(ev.date) : showLeague ? L?.short : ""}{ev.state === "pre" && showLeague ? ` · ${L?.short}` : ""}</small>
@@ -61,7 +69,7 @@ export function MatchRow({ ev, showLeague = false }) {
               <TeamLogo team={t} size={24} />
               <span className="nm">{t.short}</span>
               {ev.reds?.[s] > 0 && <span className="rc" title="Red card" />}
-              {ev.state !== "pre" && <span className="sc num">{t.score ?? "–"}</span>}
+              {ev.state !== "pre" && <Score v={t.score} className="sc" />}
             </div>
           );
         })}
@@ -101,8 +109,9 @@ export function MatchRow({ ev, showLeague = false }) {
 
 export function LiveCard({ ev }) {
   const L = LEAGUE_BY_ID[ev.league];
+  const goal = useFlash(`${ev.home.score}-${ev.away.score}`, 1600);
   return (
-    <Link href={href(ev)} className="lcard">
+    <Link href={href(ev)} className={`lcard ${goal ? "goal" : ""}`}>
       <div className="row" style={{ gap: 8 }}>
         <span className="pill live">{ev.minute ? `${ev.minute}'` : ev.detail || "LIVE"}</span>
         <span className="muted row" style={{ fontSize: 12, gap: 6, flexWrap: "nowrap", minWidth: 0, flex: 1 }}><LeagueFlag league={L} size={12} /><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{L?.name}</span></span>
@@ -110,7 +119,7 @@ export function LiveCard({ ev }) {
       </div>
       <div className="score">
         <span className="t"><TeamLogo team={ev.home} size={40} /><span>{ev.home.short}</span></span>
-        <span className="s num">{ev.home.score ?? 0}<span className="dim"> : </span>{ev.away.score ?? 0}</span>
+        <span className="s"><Score v={ev.home.score ?? 0} /><span className="dim"> : </span><Score v={ev.away.score ?? 0} /></span>
         <span className="t"><TeamLogo team={ev.away} size={40} /><span>{ev.away.short}</span></span>
       </div>
       {ev.a?.pick ? (
