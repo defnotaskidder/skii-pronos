@@ -16,6 +16,7 @@ const NAV = [
   { href: "/matches", label: "Matches", icon: "ball" },
   { href: "/live", label: "Live", icon: "live", live: true },
   { href: "/coupon", label: "Coupon du jour", icon: "ticket" },
+  { href: "/grosse-cote", label: "Grosse cote", icon: "bolt" },
   { href: "/history", label: "History", icon: "history" },
 ];
 const ACCOUNT = [

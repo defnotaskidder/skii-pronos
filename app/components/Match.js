@@ -5,7 +5,7 @@ import { useSlip } from "./Providers";
 import { useNotify } from "./Notify";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 import { useFlash } from "./Motion";
-import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "./ui";
+import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, liveLabel, localTime, odds2, pct, useNow } from "./ui";
 
 export const href = (ev) => `/match/${ev.league}/${ev.id}`;
 
@@ -98,6 +98,14 @@ export function MatchRow({ ev, showLeague = false }) {
               <Icon name={slip.has(ev.id, pick.key) ? "check" : "plus"} />
             </button>
           </>
+        ) : done && ev.done ? (
+          <>
+            <span className="txt">
+              <b>{ev.done.label}</b>
+              <small>Engine pick {ev.done.estimated ? "≈ " : "@ "}{odds2(ev.done.odds)}</small>
+            </span>
+            <span className={`result-badge r-${ev.done.result || "P"}`}>{ev.done.result === "W" ? "✓" : ev.done.result === "L" ? "✗" : ev.done.result === "V" ? "V" : "…"}</span>
+          </>
         ) : (
           <span className="txt"><small>{done ? "Final" : ev.postponed ? "Postponed" : "No prices yet"}</small></span>
         )}
@@ -110,10 +118,11 @@ export function MatchRow({ ev, showLeague = false }) {
 export function LiveCard({ ev }) {
   const L = LEAGUE_BY_ID[ev.league];
   const goal = useFlash(`${ev.home.score}-${ev.away.score}`, 1600);
+  const now = useNow(15000);
   return (
     <Link href={href(ev)} className={`lcard ${goal ? "goal" : ""}`}>
       <div className="row" style={{ gap: 8 }}>
-        <span className="pill live">{ev.minute ? `${ev.minute}'` : ev.detail || "LIVE"}</span>
+        <span className="pill live">{liveLabel(ev, now)}</span>
         <span className="muted row" style={{ fontSize: 12, gap: 6, flexWrap: "nowrap", minWidth: 0, flex: 1 }}><LeagueFlag league={L} size={12} /><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{L?.name}</span></span>
         <FollowBtn ev={ev} small />
       </div>

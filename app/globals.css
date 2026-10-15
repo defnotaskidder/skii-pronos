@@ -249,7 +249,7 @@ img { display: block; }
 /* ---------- match rows ---------- */
 .league-block { margin-bottom: 18px; }
 .league-head { display: flex; align-items: center; gap: 10px; padding: 0 4px 10px; }
-.lflag { flex: none; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); }
+.lflag { flex: none; display: inline-block; vertical-align: -2px; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); }
 .lflag.emoji { box-shadow: none; line-height: 1; }
 .league-head b { font-size: 14.5px; }
 .league-head .muted { font-size: 12px; }
@@ -478,3 +478,9 @@ a:hover > .logo-lock .lm-shine, .top-logo:hover .lm-shine { animation: lm-shine 
 /* grid columns never grow past the screen (horizontal scrollers inside them scroll instead) */
 .grid > *, .stack > * { min-width: 0; }
 .hscroll { max-width: 100%; }
+
+/* engine pick result on finished games */
+.result-badge { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 20px; font-weight: 800; background: rgba(255, 255, 255, .06); color: var(--muted); border: 1px solid var(--line-2); }
+.result-badge.r-W { background: rgba(34, 197, 94, .16); color: #86efac; border-color: rgba(34, 197, 94, .4); box-shadow: 0 0 22px -6px rgba(34, 197, 94, .6); }
+.result-badge.r-L { background: rgba(244, 63, 94, .14); color: #fda4af; border-color: rgba(244, 63, 94, .35); }
+.result-badge.sm { width: 30px; height: 30px; font-size: 14px; }

@@ -34,10 +34,11 @@ export function LeagueFlag({ league, size = 18 }) {
 }
 
 export function TeamLogo({ team, size = 28 }) {
+  const [broken, setBroken] = useState(false);
   const initials = (team?.abbr || team?.short || team?.name || "?").slice(0, 3).toUpperCase();
   return (
     <span className="logo" style={{ width: size, height: size }}>
-      {team?.logo ? <img src={team.logo} alt="" loading="lazy" width={size} height={size} /> : initials}
+      {team?.logo && !broken ? <img src={team.logo} alt="" loading="lazy" width={size} height={size} onError={() => setBroken(true)} /> : initials}
     </span>
   );
 }
@@ -97,9 +98,30 @@ export function TriBar({ h, d, a, labels }) {
   );
 }
 
+// Re-render every `ms` (live minutes keep ticking between data refreshes).
+export function useNow(ms = 15000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), ms); return () => clearInterval(t); }, [ms]);
+  return now;
+}
+
+// Live clock label: HT, 45+2', 67'… For football the minute keeps counting from the last update
+// (`_at`) so it never looks frozen; other sports show the feed's own detail (Q3 5:12, 2nd…).
+export function liveLabel(ev, now = Date.now()) {
+  const d = ev.detail || "";
+  if (/^HT$|half ?time/i.test(d)) return "HT";
+  if (ev.sport !== "soccer" || !ev.minute) return d || "LIVE";
+  if (/pen|shootout|break|end of/i.test(d)) return d;
+  const cap = ev.period >= 4 ? 120 : ev.period === 3 ? 105 : ev.period === 2 ? 90 : 45;
+  if (ev.minute > cap) return `${cap}+${ev.minute - cap}'`;
+  const m = ev.minute + (ev._at ? Math.max(0, Math.floor((now - ev._at) / 60000)) : 0);
+  return m > cap ? `${cap}+'` : `${m}'`;
+}
+
 export function StatusPill({ ev }) {
+  const now = useNow(ev.state === "in" ? 15000 : 600000);
   if (ev.postponed) return <span className="pill amber">PPD</span>;
-  if (ev.state === "in") return <span className="pill live">{ev.minute ? `${ev.minute}'` : ev.detail || "LIVE"}</span>;
+  if (ev.state === "in") return <span className="pill live">{liveLabel(ev, now)}</span>;
   if (ev.state === "post") return <span className="pill ft">{ev.detail || "FT"}</span>;
   return <span className="pill">{localTime(ev.date)}</span>;
 }

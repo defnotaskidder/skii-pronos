@@ -9,31 +9,66 @@ import { product, hitChance } from "../../lib/coupon";
 const DataCtx = createContext(null);
 export const useBoard = () => useContext(DataCtx);
 
+// Full board (fixtures + picks) every 60–120 s; while anything is live or about to start, a
+// light live feed (/api/live) is merged in every 15 s so scores, minutes and states stay current.
 function DataProvider({ children }) {
-  const [state, setState] = useState({ events: [], leagues: [], loading: true, error: "", updated: null });
-  const timer = useRef(null);
+  const [state, setState] = useState({ events: [], loading: true, error: "", updated: null, liveAt: null });
+  const eventsRef = useRef([]);
   const refresh = useCallback(async () => {
     try {
       const r = await fetch("/api/board", { cache: "no-store" });
       const d = await r.json();
-      setState({ events: d.events || [], leagues: d.leagues || [], loading: false, error: d.error || "", updated: d.updated || new Date().toISOString() });
-      return d.events || [];
-    } catch (e) {
+      const now = new Date().toISOString();
+      const at = Date.now();
+      eventsRef.current = (d.events || []).map((e) => ({ ...e, _at: at }));
+      setState({ events: eventsRef.current, loading: false, error: d.error || "", updated: d.updated || now, liveAt: now });
+      return eventsRef.current;
+    } catch {
       setState((s) => ({ ...s, loading: false, error: "Couldn't reach the server — retrying." }));
       return null;
     }
   }, []);
+
+  const refreshLive = useCallback(async () => {
+    try {
+      const r = await fetch("/api/live", { cache: "no-store" });
+      const d = await r.json();
+      if (!d.games?.length) return;
+      const byId = new Map(d.games.map((g) => [g.id, g]));
+      let changed = false;
+      const next = eventsRef.current.map((e) => {
+        const g = byId.get(e.id);
+        if (!g) return e;
+        if (g.state === e.state && g.hs === e.home?.score && g.as === e.away?.score && g.minute === e.minute && g.detail === e.detail) return e;
+        changed = true;
+        return {
+          ...e, state: g.state, detail: g.detail, minute: g.minute, period: g.period ?? e.period, reds: g.reds || e.reds, completed: g.state === "post" ? true : e.completed, _at: Date.now(),
+          home: { ...e.home, score: g.hs }, away: { ...e.away, score: g.as },
+        };
+      });
+      eventsRef.current = next;
+      setState((s) => ({ ...s, ...(changed ? { events: next } : {}), liveAt: d.at || new Date().toISOString() }));
+    } catch { /* next tick */ }
+  }, []);
+
   useEffect(() => {
-    let stop = false;
-    const loop = async () => {
-      const ev = await refresh();
-      if (stop) return;
-      const live = (ev || []).some((e) => e.state === "in");
-      timer.current = setTimeout(loop, live ? 30e3 : 90e3);
+    let stop = false, tBoard, tLive;
+    const busy = () => eventsRef.current.some((e) => e.state === "in" || (e.state === "pre" && new Date(e.date) - Date.now() < 15 * 60e3 && new Date(e.date) > Date.now() - 30 * 60e3));
+    const boardLoop = async () => {
+      await refresh();
+      if (!stop) tBoard = setTimeout(boardLoop, busy() ? 60e3 : 120e3);
     };
-    loop();
-    return () => { stop = true; clearTimeout(timer.current); };
-  }, [refresh]);
+    const liveLoop = async () => {
+      if (busy() && document.visibilityState !== "hidden") await refreshLive();
+      if (!stop) tLive = setTimeout(liveLoop, 15e3);
+    };
+    boardLoop();
+    tLive = setTimeout(liveLoop, 15e3);
+    const wake = () => { if (document.visibilityState === "visible") refreshLive(); };
+    document.addEventListener("visibilitychange", wake);
+    return () => { stop = true; clearTimeout(tBoard); clearTimeout(tLive); document.removeEventListener("visibilitychange", wake); };
+  }, [refresh, refreshLive]);
+
   const value = useMemo(() => {
     const live = state.events.filter((e) => e.state === "in");
     return { ...state, live, refresh };

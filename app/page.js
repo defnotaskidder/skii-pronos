@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import Icon from "./components/Icons";
 import { Top } from "./components/Shell";
 import { useBoard, useTrack } from "./components/Providers";
-import { CouponActions, CouponCard, useCouponOfTheDay } from "./components/Coupon";
+import { CouponActions, CouponCard, chanceText, useCouponOfTheDay } from "./components/Coupon";
 import { LiveCard, MatchRow, PickItem } from "./components/Match";
 import { Skeleton, pct } from "./components/ui";
 import { CountUp } from "./components/Motion";
@@ -94,16 +94,19 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {coupon?.bold?.legs?.length > 0 && (
-            <Link href="/coupon" className="card" style={{ display: "block" }}>
-              <div className="row" style={{ flexWrap: "nowrap" }}>
-                <span className="stat-ico" style={{ margin: 0 }}><Icon name="bolt" /></span>
-                <div><b style={{ fontSize: 15 }}>Bold coupon</b><div className="muted" style={{ fontSize: 12.5 }}>{coupon.bold.legs.length} legs · ~{pct(coupon.bold.chance)} chance</div></div>
-                <span className="spacer" />
-                <span className="total-odds num grad-text" style={{ fontSize: 30 }}><CountUp value={coupon.bold.odds} decimals={2} /></span>
+          <Link href="/grosse-cote" className="card" style={{ display: "block" }}>
+            <div className="row" style={{ flexWrap: "nowrap" }}>
+              <span className="stat-ico" style={{ margin: 0 }}><Icon name="bolt" /></span>
+              <div style={{ minWidth: 0 }}>
+                <b style={{ fontSize: 15 }}>Grosse cote du jour</b>
+                <div className="muted" style={{ fontSize: 12.5 }}>
+                  {coupon?.grosse?.legs?.length ? `${coupon.grosse.legs.length} legs · ${chanceText(coupon.grosse.chance)}` : "Big odds, best chance · generator inside"}
+                </div>
               </div>
-            </Link>
-          )}
+              <span className="spacer" />
+              {coupon?.grosse?.legs?.length > 0 && <span className="total-odds num grad-text" style={{ fontSize: 30 }}><CountUp value={coupon.grosse.odds} decimals={2} /></span>}
+            </div>
+          </Link>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import Icon from "../../../components/Icons";
 import { Top } from "../../../components/Shell";
 import { useSlip } from "../../../components/Providers";
 import { FollowBtn, toLeg } from "../../../components/Match";
-import { Form, LeagueFlag, Ring, Skeleton, StatusPill, TeamLogo, Tier, TriBar, dayLabel, localTime, odds2, pct } from "../../../components/ui";
+import { liveLabel, useNow, Form, LeagueFlag, Ring, Skeleton, StatusPill, TeamLogo, Tier, TriBar, dayLabel, localTime, odds2, pct } from "../../../components/ui";
 
 const STAT_LABEL = {
   possessionPct: "Possession %", totalShots: "Shots", shotsOnTarget: "Shots on target", wonCorners: "Corners", foulsCommitted: "Fouls",
@@ -23,7 +23,7 @@ export default function MatchPage({ params }) {
     try {
       const r = await fetch(`/api/match?league=${league}&id=${id}`, { cache: "no-store" });
       const d = await r.json();
-      if (d.error) setError(d.error); else { setData(d); setError(""); }
+      if (d.error) setError(d.error); else { setData({ ...d, event: { ...d.event, _at: Date.now() } }); setError(""); }
       return d;
     } catch { setError("Couldn't load this match."); return null; }
   }, [league, id]);
@@ -84,7 +84,7 @@ export default function MatchPage({ params }) {
             ) : (
               <>
                 <span className="bigscore num">{ev.home.score ?? 0}<span className="dim"> : </span>{ev.away.score ?? 0}</span>
-                <span className="muted" style={{ fontSize: 12.5 }}>{ev.state === "in" ? (ev.minute ? `${ev.minute}' · ${ev.detail}` : ev.detail) : ev.detail}</span>
+                <span className="muted" style={{ fontSize: 12.5 }}>{ev.state === "in" ? <LiveClock ev={ev} /> : ev.detail}</span>
               </>
             )}
           </div>
@@ -128,6 +128,12 @@ export default function MatchPage({ params }) {
       </div>
     </>
   );
+}
+
+function LiveClock({ ev }) {
+  const now = useNow(15000);
+  const label = liveLabel(ev, now);
+  return <>{label}{ev.detail && ev.detail !== label && !/^\d+'/.test(ev.detail) ? ` · ${ev.detail}` : ""}</>;
 }
 
 // Tab bar with a gradient underline that slides to the active tab.

@@ -2,11 +2,12 @@
 import { useState } from "react";
 import Icon from "../components/Icons";
 import { Top } from "../components/Shell";
-import { CouponActions, CouponCard, useCouponOfTheDay } from "../components/Coupon";
+import Link from "next/link";
+import { CouponActions, CouponCard, chanceText, useCouponOfTheDay } from "../components/Coupon";
 import { Skeleton, pct } from "../components/ui";
 
-const TARGETS = [2, 3, 5, 10, 20, 50, 100, 200];
-const MODES = [["safe", "Safe", "Highest hit chance"], ["balanced", "Balanced", "Chance + price"], ["value", "Value", "Biggest edge vs the price"]];
+const TARGETS = [1.5, 2, 2.5, 3, 4, 5, 7, 10];
+const MODES = [["safe", "Safe", "Short, likely legs"], ["balanced", "Balanced", "Chance + price"], ["value", "Value", "Biggest edge vs the price"]];
 const WINDOWS = [[24, "24 h"], [48, "48 h"], [72, "3 days"]];
 
 export default function CouponPage() {
@@ -46,8 +47,9 @@ export default function CouponPage() {
               {data.dropped.map((l) => <div key={l.eventId} className="kv"><span>{l.home} – {l.away}: {l.label}</span><b style={{ fontWeight: 500, color: "var(--muted)" }}>{l.note}</b></div>)}
             </section>
           )}
-          {data && (
-            <CouponCard coupon={data.bold} title="Bold coupon" eyebrow="Balanced · ~8 odds" glow={false} compact footer={<CouponActions coupon={data.bold} title="Bold coupon" />} />
+          {data?.grosse && (
+            <CouponCard coupon={data.grosse} title="Grosse cote du jour" eyebrow={`~30 odds · ${chanceText(data.grosse.chance)}`} glow={false} compact icon="bolt"
+              footer={<CouponActions coupon={data.grosse} title="Grosse cote du jour" extra={<Link href="/grosse-cote" className="btn soft"><Icon name="bolt" />Grosse cote generator</Link>} />} />
           )}
         </div>
 
@@ -72,7 +74,7 @@ export default function CouponPage() {
             </div>
             <button className="btn primary block" disabled={busy} onClick={build}><Icon name="bolt" />{busy ? "Building…" : `Build ~${target} odds`}</button>
             {err && <div className="error" style={{ marginTop: 12 }}>{err}</div>}
-            <p className="note" style={{ marginBottom: 0 }}>One market per match, strongest legs first. Anything above ~5 is a lottery ticket: stake a tenth of a unit.</p>
+            <p className="note" style={{ marginBottom: 0 }}>One market per match, built for the highest chance at your target. Want 10, 50, 1000? Use the <Link href="/grosse-cote" style={{ color: "#c4b5fd" }}>grosse cote generator</Link>.</p>
           </section>
           {custom && (
             <CouponCard coupon={custom} title={`Custom ~${target}`} eyebrow={`${MODES.find((m) => m[0] === mode)[1]} · ${custom.legs.length} legs${custom.reached ? "" : " · target not reached"}`} glow={false} compact
@@ -80,9 +82,10 @@ export default function CouponPage() {
           )}
           {data && (
             <section className="card flat tight">
-              <div className="kv"><span>Matches considered</span><b>{data.pool}</b></div>
+              {data.pool ? <div className="kv"><span>Matches considered</span><b>{data.pool}</b></div> : null}
               <div className="kv"><span>Safe coupon hit chance</span><b>{pct(data.safe?.chance)}</b></div>
-              <div className="kv"><span>Generated</span><b>{new Date(data.generated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</b></div>
+              <div className="kv"><span>Grosse cote hit chance</span><b>{chanceText(data.grosse?.chance)}</b></div>
+              <div className="kv"><span>Saved for the day</span><b>{data.stored ? "Yes, archived in History" : "This session"}</b></div>
             </section>
           )}
         </div>

@@ -10,6 +10,9 @@ import { LEAGUES, LEAGUE_BY_ID, SPORT_LABEL } from "../../lib/leagues";
 
 const STATES = [["all", "All"], ["in", "Live"], ["pre", "Upcoming"], ["post", "Finished"]];
 const SORTS = [["time", "Kick-off"], ["confidence", "Best picks"]];
+const CATS = [["all", "All competitions"], ["men", "Men's"], ["women", "Women's"], ["youth", "Youth & college"]];
+const catOf = (id) => { const L = LEAGUE_BY_ID[id]; return !L ? "men" : L.women ? "women" : L.tier === 6 ? "youth" : "men"; };
+const PER_LEAGUE = 8; // rows shown per league before "Show all"
 const RANK = { High: 4, "Med-High": 3, Medium: 2, Low: 1, Skip: 0 };
 const STATE_ORDER = { in: 0, pre: 1, post: 2 };
 // live → upcoming (soonest first) → finished (most recent first)
@@ -25,6 +28,9 @@ function Matches() {
   const [league, setLeague] = useState(params.get("league") || "all");
   const [q, setQ] = useState(params.get("q") || "");
   const [sort, setSort] = useState("time");
+  const [cat, setCat] = useState("all");
+  const [open, setOpen] = useState({}); // leagues expanded past PER_LEAGUE
+  const [flatMax, setFlatMax] = useState(120);
 
   useEffect(() => { setQ(params.get("q") || ""); if (params.get("league")) setLeague(params.get("league")); }, [params]);
 
@@ -36,6 +42,7 @@ function Matches() {
 
   const base = useMemo(() => events.filter((e) => {
     if (sport !== "all" && e.sport !== sport) return false;
+    if (cat !== "all" && catOf(e.league) !== cat) return false;
     if (day !== "all" && dayLabel(e.date) !== day) return false;
     if (q) {
       const s = q.toLowerCase();
@@ -43,7 +50,7 @@ function Matches() {
       if (![e.home.name, e.away.name, e.home.short, e.away.short, L?.name].some((x) => x?.toLowerCase().includes(s))) return false;
     }
     return true;
-  }), [events, sport, day, q]);
+  }), [events, sport, day, q, cat]);
 
   const counts = useMemo(() => ({ all: base.length, in: base.filter((e) => e.state === "in").length, pre: base.filter((e) => e.state === "pre").length, post: base.filter((e) => e.state === "post").length }), [base]);
   const leagueCounts = useMemo(() => { const c = {}; base.forEach((e) => { c[e.league] = (c[e.league] || 0) + 1; }); return c; }, [base]);
@@ -69,7 +76,7 @@ function Matches() {
 
   return (
     <>
-      <Top title="Matches" sub={`Every league, loaded automatically${updated ? ` · updated ${new Date(updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}`} />
+      <Top title="Matches" sub={`${new Set(events.map((e) => e.league)).size} competitions, loaded automatically${updated ? ` · updated ${new Date(updated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}`} />
       <div className="stack" style={{ gap: 12, marginBottom: 18 }}>
         <div className="row">
           <div className="seg">
@@ -95,6 +102,8 @@ function Matches() {
           <span style={{ width: 1, background: "var(--line-2)", margin: "4px 4px", flex: "none" }} />
           <button className={`chip ${sport === "all" ? "on" : ""}`} onClick={() => setSport("all")}>All sports</button>
           {sports.map((s) => <button key={s} className={`chip ${sport === s ? "on" : ""}`} onClick={() => setSport(s)}>{SPORT_LABEL[s]}</button>)}
+          <span style={{ width: 1, background: "var(--line-2)", margin: "4px 4px", flex: "none" }} />
+          {CATS.map(([k, l]) => <button key={k} className={`chip ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}>{l}</button>)}
         </div>
         <div className="chips">
           <button className={`chip ${league === "all" ? "on" : ""}`} onClick={() => setLeague("all")}>All leagues</button>
@@ -118,10 +127,20 @@ function Matches() {
               <span className="muted">{evs.length} {evs.length === 1 ? "match" : "matches"}</span>
               {evs.some((e) => e.state === "in") && <span className="pill live">{evs.filter((e) => e.state === "in").length} live</span>}
             </div>
-            {evs.map((e) => <MatchRow key={e.id} ev={e} />)}
+            {(open[lid] || league !== "all" ? evs : evs.slice(0, PER_LEAGUE)).map((e) => <MatchRow key={e.id} ev={e} />)}
+            {evs.length > PER_LEAGUE && league === "all" && (
+              <button className="btn ghost sm" style={{ margin: "2px 0 6px" }} onClick={() => setOpen((o) => ({ ...o, [lid]: !o[lid] }))}>
+                <Icon name={open[lid] ? "down" : "chevron"} />{open[lid] ? "Show fewer" : `Show all ${evs.length} ${L.name} matches`}
+              </button>
+            )}
           </section>
         );
-      }) : list.map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
+      }) : (
+        <>
+          {list.slice(0, flatMax).map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
+          {list.length > flatMax && <button className="btn soft block" onClick={() => setFlatMax((n) => n + 120)}>Show more ({list.length - flatMax} left)</button>}
+        </>
+      )}
     </>
   );
 }
