@@ -1,7 +1,7 @@
 "use client";
-// Accounts via Supabase Auth (email + password, Google). Turned on by setting
-// NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY; until then the site works
-// fully signed-out and the sign-in page explains what's missing.
+// Accounts via Supabase Auth (email + password, Google). The client is created once the
+// server reports the project's public settings (see /api/auth-config); until then the site
+// works fully signed-out and the sign-in page explains what's missing.
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { getSupabase } from "../../lib/supabase";
 
@@ -9,20 +9,29 @@ const Ctx = createContext(null);
 export const useAuth = () => useContext(Ctx);
 
 export function AuthProvider({ children }) {
-  const sb = getSupabase();
+  const [sb, setSb] = useState(null);
   const [user, setUser] = useState(null);
-  const [ready, setReady] = useState(!sb);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!sb) return;
-    sb.auth.getSession().then(({ data }) => { setUser(data.session?.user || null); setReady(true); });
-    const { data: sub } = sb.auth.onAuthStateChange((_e, session) => setUser(session?.user || null));
-    return () => sub.subscription.unsubscribe();
-  }, [sb]);
+    let sub, alive = true;
+    getSupabase().then(async (client) => {
+      if (!alive) return;
+      setSb(client);
+      if (client) {
+        const { data } = await client.auth.getSession();
+        if (!alive) return;
+        setUser(data.session?.user || null);
+        sub = client.auth.onAuthStateChange((_e, session) => setUser(session?.user || null)).data.subscription;
+      }
+      setReady(true);
+    });
+    return () => { alive = false; sub?.unsubscribe(); };
+  }, []);
 
   const value = useMemo(() => ({
     enabled: !!sb, ready, user,
-    name: user?.user_metadata?.name || user?.email?.split("@")[0] || null,
+    name: user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || null,
     signIn: async (email, password) => {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;

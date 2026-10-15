@@ -44,13 +44,15 @@ export default function Login() {
         <h1 style={{ margin: "0 0 4px", fontSize: 26, letterSpacing: "-.025em" }}>{mode === "signup" ? "Create your account" : mode === "reset" ? "Reset password" : "Welcome back"}</h1>
         <p className="muted" style={{ margin: "0 0 20px" }}>{mode === "signup" ? "Free. Save your history and get alerts on every device." : mode === "reset" ? "We'll email you a reset link." : "Sign in to sync your coupons and alerts."}</p>
 
-        {!auth.enabled ? (
+        {!auth.ready ? (
+          <div className="shimmer" style={{ height: 150 }} />
+        ) : !auth.enabled ? (
           <div className="card flat tight" style={{ background: "rgba(255,255,255,.03)" }}>
             <div className="row" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
               <Icon name="lock" size={18} style={{ color: "#c4b5fd", marginTop: 2, flex: "none" }} />
               <div>
                 <b>Accounts aren't switched on yet</b>
-                <p className="muted" style={{ margin: "6px 0 0", fontSize: 13 }}>The sign-in backend runs on Supabase. Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to the site's environment and this form goes live. Until then everything works without an account.</p>
+                <p className="muted" style={{ margin: "6px 0 0", fontSize: 13 }}>The sign-in backend runs on Supabase. Connect a Supabase database to this project in Vercel (Storage → Supabase) and redeploy, and this form goes live. Until then everything works without an account.</p>
               </div>
             </div>
             <Link href="/" className="btn soft block" style={{ marginTop: 14 }}>Continue without an account</Link>

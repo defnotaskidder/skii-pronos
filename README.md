@@ -37,7 +37,7 @@ Copy `.env.example` to `.env.local` for local runs, or add the same names in Ver
 | `COUPON_AI` | `false` turns off the AI review of the coupon |
 | `ODDS_API_KEY` | Bookmaker comparison (1xBet first) on match pages — The Odds API |
 | `ODDS_REGIONS`, `ODDS_BOOKMAKERS`, `ODDS_CACHE_MIN` | Which books, in what order, cached how long |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Accounts (sign in / sign up) |
+| Supabase (Vercel → Storage → connect Supabase) | Accounts (sign in / sign up). Any variable prefix works; the site finds `…SUPABASE_URL` and `…SUPABASE_ANON_KEY` itself |
 
 Fixtures, scores, stats, form, standings and the main odds come from ESPN's public feed and need no key.
 
