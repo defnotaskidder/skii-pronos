@@ -18,7 +18,7 @@ const TOP = ["uefa.champions", "eng.1", "esp.1", "ger.1", "ita.1", "fra.1", "uef
 // league order: by tier, then the curated order (top flights before college and youth competitions)
 const ORDERED = LEAGUES.map((l, i) => [l, i]).sort((a, b) => a[0].tier - b[0].tier || a[1] - b[1]).map(([l]) => l);
 const ORDER = Object.fromEntries(ORDERED.map((l, i) => [l.id, i]));
-const PER_LEAGUE = 8; // rows shown per league before "Show all"
+const PER_LEAGUE = 10; // rows shown per minor league before "Show all" (top leagues always show every game)
 const RANK = { High: 4, "Med-High": 3, Medium: 2, Low: 1, Skip: 0 };
 const STATE_ORDER = { in: 0, pre: 1, post: 2 };
 // live → upcoming (soonest first) → finished (most recent first)
@@ -149,6 +149,7 @@ function Matches() {
         <div className="empty"><Icon name="ball" />{t("No matches for these filters.")}</div>
       ) : grouped ? grouped.slice(0, shownLeagues).map(([lid, evs]) => {
         const L = LEAGUE_BY_ID[lid];
+        const cap = (L?.tier ?? 9) <= 2 ? Infinity : PER_LEAGUE;
         return (
           <section key={lid} className="league-block">
             <div className="league-head" style={{ flexWrap: "wrap", rowGap: 6 }}>
@@ -157,8 +158,8 @@ function Matches() {
               {evs.some((e) => e.state === "in") && <span className="pill live">{t("{n} live", { n: evs.filter((e) => e.state === "in").length })}</span>}
               <SkillBadge s={skill?.[lid]} />
             </div>
-            {(open[lid] || league !== "all" ? evs : evs.slice(0, PER_LEAGUE)).map((e) => <MatchRow key={e.id} ev={e} />)}
-            {evs.length > PER_LEAGUE && league === "all" && (
+            {(open[lid] || league !== "all" ? evs : evs.slice(0, cap)).map((e) => <MatchRow key={e.id} ev={e} />)}
+            {evs.length > cap && league === "all" && (
               <button className="btn ghost sm" style={{ margin: "2px 0 6px" }} onClick={() => setOpen((o) => ({ ...o, [lid]: !o[lid] }))}>
                 <Icon name={open[lid] ? "down" : "chevron"} />{open[lid] ? t("Show fewer") : t("Show all {n} {league} matches", { n: evs.length, league: L.name })}
               </button>
