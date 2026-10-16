@@ -2,3 +2,5 @@ node_modules
 .next
 .env.local
 .env
+desktop/node_modules/
+desktop/dist/

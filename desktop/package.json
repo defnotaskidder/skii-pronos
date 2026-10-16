@@ -1,0 +1,27 @@
+{
+  "name": "skii-pronos-desktop",
+  "productName": "Skii Pronos",
+  "version": "1.0.0",
+  "description": "Skii Pronos for Windows",
+  "main": "main.js",
+  "author": "Skii Pronos",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "app.skiipronos.desktop",
+    "productName": "Skii Pronos",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "package.json"],
+    "win": { "icon": "build/icon.png", "target": ["nsis", "portable"] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "Skii Pronos" },
+    "portable": { "artifactName": "SkiiPronos-portable.exe" }
+  }
+}
