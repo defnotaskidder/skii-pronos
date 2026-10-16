@@ -124,3 +124,40 @@ a.card:hover, .lcard:hover, .pitem:hover { transform: translateY(-3px); box-shad
 .no-motion [data-reveal] { opacity: 1; transform: none; }
 
 .navs { position: relative; display: flex; flex-direction: column; gap: 18px; }
+
+/* ---- smoother motion pass: longer, softer curves; quicker, tighter stagger; hover only on hover devices ---- */
+:root { --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.3, 1.35, .5, 1); }
+html { scroll-behavior: smooth; }
+.aurora i { opacity: .38; }
+@media (max-width: 1023px) { .aurora .a3 { display: none; } }
+.page-enter { animation: page-in .6s var(--ease) backwards; }
+@keyframes page-in { from { opacity: 0; transform: translateY(10px) scale(.995); } to { opacity: 1; transform: none; } }
+.stagger > * { animation: rise .6s var(--ease) backwards; }
+.stagger > :nth-child(2) { animation-delay: 35ms; }
+.stagger > :nth-child(3) { animation-delay: 70ms; }
+.stagger > :nth-child(4) { animation-delay: 105ms; }
+.stagger > :nth-child(5) { animation-delay: 140ms; }
+.stagger > :nth-child(6) { animation-delay: 175ms; }
+.stagger > :nth-child(7) { animation-delay: 210ms; }
+.stagger > :nth-child(8) { animation-delay: 245ms; }
+.stagger > :nth-child(9) { animation-delay: 280ms; }
+.stagger > :nth-child(n+10) { animation-delay: 320ms; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.99); } to { opacity: 1; transform: none; } }
+.fade-in { animation: rise .5s var(--ease) backwards; }
+[data-reveal] { transform: translateY(16px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.card, .mrow, .lcard, .pitem, .leg { transition-duration: .4s; }
+@media (hover: hover) {
+  a.card:hover, .lcard:hover, .pitem:hover { transform: translateY(-2px); box-shadow: 0 22px 44px -26px rgba(124, 58, 237, .5); }
+  .mrow:hover { transform: translateY(-1px); }
+}
+@media (hover: none) { a.card:hover, .lcard:hover, .pitem:hover, .mrow:hover, .league-card:hover { transform: none; } }
+.chip.on { animation: chip-pop .4s var(--spring); }
+@keyframes chip-pop { from { transform: scale(.94); } }
+.result-badge.r-W, .result-badge.r-L { animation: pop-in .45s var(--spring) backwards; }
+.best-ribbon .fire { display: inline-block; transform-origin: 50% 90%; animation: fire 1.3s ease-in-out infinite; }
+@keyframes fire { 0%, 100% { transform: scale(1) rotate(-4deg); } 50% { transform: scale(1.2) rotate(5deg); } }
+.lcard.best, .lcard.best.top { animation: best-glow 2.4s ease-in-out infinite; }
+@keyframes best-glow { 0%, 100% { box-shadow: 0 0 0 1px rgba(249, 115, 22, .35), 0 12px 36px -12px rgba(249, 115, 22, .6); } 50% { box-shadow: 0 0 0 2px rgba(249, 115, 22, .65), 0 18px 50px -10px rgba(236, 72, 153, .8); } }
+.drawer-bg { animation-duration: .3s; }
+.drawer { animation: slide .5s var(--spring); }
+@media (prefers-reduced-motion: reduce) { .lcard.best, .lcard.best.top, .best-ribbon .fire { animation: none; } html { scroll-behavior: auto; } }

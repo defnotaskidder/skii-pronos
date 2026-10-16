@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import Icon from "../components/Icons";
 import { Top } from "../components/Shell";
 import { useT } from "../components/Lang";
-import { LeagueFlag, Skeleton, Tier, dayLabel, localTime, odds2, pct } from "../components/ui";
+import { LeagueFlag, Skeleton, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "../components/ui";
 import { CountUp } from "../components/Motion";
 import { LEAGUE_BY_ID, SPORT_LABEL } from "../../lib/leagues";
 
@@ -28,6 +29,7 @@ export default function Record() {
   const [mode, setMode] = useState("priced"); // real bookmaker prices only, or every pick
   const [d, setD] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [openLeague, setOpenLeague] = useState(null); // league whose picks are shown in the drawer
   useEffect(() => {
     let alive = true;
     setD(null);
@@ -71,9 +73,9 @@ export default function Record() {
           {mo?.n > 0 && <p className="note" style={{ margin: "0 0 18px" }}>{t("Model-only picks have no bookmaker price (≈ odds), so they can't be bet at that price: {w}/{n} won, {u}u. Only “All picks” counts them.", { w: mo.w, n: mo.n, u: signed(mo.units, 1) })}</p>}
 
           <section className="card" style={{ marginBottom: 18 }} data-reveal>
-            <Head title={t("Where the model is strongest")} sub={t(STATUS.strong[2])} />
+            <Head title={t("Where the model is strongest")} sub={`${t(STATUS.strong[2])} · ${t("Tap a league to see its picks")}`} />
             {d.best?.length ? (
-              <div className="grid g-3" style={{ gap: 12 }}>{d.best.map((l) => <LeagueCard key={l.league} l={l} />)}</div>
+              <div className="grid g-3" style={{ gap: 12 }}>{d.best.map((l) => <LeagueCard key={l.league} l={l} onOpen={setOpenLeague} />)}</div>
             ) : (
               <div className="empty" style={{ padding: 24 }}><Icon name="sparkles" />{t("Still learning — a league needs 8+ results and a clear edge to stand out.")}</div>
             )}
@@ -82,7 +84,7 @@ export default function Record() {
           {d.weak?.length > 0 && (
             <section className="card" style={{ marginBottom: 18, borderColor: "rgba(244,63,94,.22)" }} data-reveal>
               <Head title={t("Leagues to avoid")} sub={t(STATUS.weak[2])} />
-              <div className="grid g-3" style={{ gap: 12 }}>{d.weak.map((l) => <LeagueCard key={l.league} l={l} weak />)}</div>
+              <div className="grid g-3" style={{ gap: 12 }}>{d.weak.map((l) => <LeagueCard key={l.league} l={l} weak onOpen={setOpenLeague} />)}</div>
               <p className="note" style={{ margin: "12px 0 0" }}>{t("Weak leagues are left out of the coupon du jour.")}</p>
             </section>
           )}
@@ -111,9 +113,10 @@ export default function Record() {
             </section>
           </div>
 
-          {d.leagues?.length > 0 && <LeagueTable leagues={d.leagues} />}
+          {d.leagues?.length > 0 && <LeagueTable leagues={d.leagues} onOpen={setOpenLeague} />}
         </>
       )}
+      {openLeague && <LeagueDrawer league={openLeague} days={days} onClose={() => setOpenLeague(null)} />}
     </>
   );
 }
@@ -137,14 +140,14 @@ function useDayWord() {
 
 // A league where the engine is clearly better (or worse) than it expects: record, hit rate vs
 // expected, how sure we are it's not luck, and the learned shift applied to its probabilities.
-function LeagueCard({ l, weak }) {
+function LeagueCard({ l, weak, onOpen }) {
   const { t } = useT();
   const m = LEAGUE_BY_ID[l.league];
   const conf = weak ? 1 - (l.pPos ?? 0.5) : l.pPos ?? 0.5;
   const pts = Math.round((l.edge || 0) * 100);
   const tone = weak ? RED : GREEN;
   return (
-    <div className="card flat tight" style={{ background: weak ? "rgba(244,63,94,.06)" : "rgba(34,197,94,.05)", borderColor: weak ? "rgba(244,63,94,.25)" : "rgba(34,197,94,.22)" }}>
+    <button type="button" className="card flat tight league-card" onClick={() => onOpen?.(l)} title={t("Tap a league to see its picks")} style={{ background: weak ? "rgba(244,63,94,.06)" : "rgba(34,197,94,.05)", borderColor: weak ? "rgba(244,63,94,.25)" : "rgba(34,197,94,.22)" }}>
       <div className="row" style={{ flexWrap: "nowrap", gap: 8 }}>
         <LeagueFlag league={m} size={14} />
         <b style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{leagueName(l.league)}</b>
@@ -163,12 +166,12 @@ function LeagueCard({ l, weak }) {
         {l.priced?.n > 0 && <span className="pill">{t("Priced ROI {x}", { x: roiText(l.priced.roi) })}</span>}
         {l.pending > 0 && <span className="pill cyan">{t("{n} upcoming", { n: l.pending })}</span>}
       </div>
-    </div>
+    </button>
   );
 }
 
 // Every league with results or upcoming picks: search, sport chips, status, record, priced ROI.
-function LeagueTable({ leagues }) {
+function LeagueTable({ leagues, onOpen }) {
   const { t } = useT();
   const dayWord = useDayWord();
   const [q, setQ] = useState("");
@@ -182,7 +185,7 @@ function LeagueTable({ leagues }) {
   const pick = (fn) => (v) => { fn(v); setShown(25); };
   return (
     <section className="card" data-reveal>
-      <Head title={t("All leagues")} sub={t("{n} leagues · {m} with upcoming picks", { n: leagues.length, m: upcoming })} />
+      <Head title={t("All leagues")} sub={`${t("{n} leagues · {m} with upcoming picks", { n: leagues.length, m: upcoming })} · ${t("Tap a league to see its picks")}`} />
       <div className="row" style={{ marginBottom: 12 }}>
         <div className="search" style={{ flex: "1 1 220px", maxWidth: 340 }}>
           <Icon name="search" size={16} />
@@ -205,7 +208,7 @@ function LeagueTable({ leagues }) {
         if (l.next) info.push(l.n ? t("from {when}", { when: `${dayWord(l.next)} ${localTime(l.next)}` }) : t("first results {date}", { date: dayWord(l.next) }));
         const color = l.status === "strong" ? GREEN : l.status === "weak" ? RED : "var(--text)";
         return (
-          <div key={l.league} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--line)" }}>
+          <button type="button" key={l.league} className="league-row" onClick={() => onOpen?.(l)} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 12 }}>
             <div style={{ minWidth: 0 }}>
               <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
                 <LeagueFlag league={LEAGUE_BY_ID[l.league]} size={13} />
@@ -217,11 +220,95 @@ function LeagueTable({ leagues }) {
               <b className="num" style={{ fontSize: 15, color }}>{l.n ? pct(l.rate) : "—"}</b>
               {l.n > 0 && <div className="dim num" style={{ fontSize: 11.5 }}>{l.w}/{l.n}</div>}
             </div>
-          </div>
+          </button>
         );
       })}
       {list.length > shown && <button className="btn soft block" style={{ marginTop: 12 }} onClick={() => setShown((n) => n + 50)}>{t("Show more ({n} left)", { n: list.length - shown })}</button>}
     </section>
+  );
+}
+
+// The picks behind one league: won / lost / void with scores, and the upcoming ones.
+function LeagueDrawer({ league: l, days, onClose }) {
+  const { t } = useT();
+  const [d, setD] = useState(null);
+  const [f, setF] = useState("all");
+  useEffect(() => {
+    let alive = true;
+    setD(null);
+    fetch(`/api/record/league?id=${encodeURIComponent(l.league)}&days=${days}`).then((r) => r.json()).then((x) => alive && setD(x)).catch(() => alive && setD({ picks: [] }));
+    return () => { alive = false; };
+  }, [l.league, days]);
+  useEffect(() => {
+    const key = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", key);
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", key); document.body.style.overflow = ""; };
+  }, [onClose]);
+  const picks = d?.picks || [];
+  const graded = picks.filter((p) => p.result);
+  const upcoming = picks.filter((p) => !p.result).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const won = graded.filter((p) => p.result === "W").length, lost = graded.filter((p) => p.result === "L").length;
+  const units = graded.reduce((a, p) => a + (p.result === "W" ? p.odds - 1 : p.result === "L" ? -1 : 0), 0);
+  const list = f === "all" ? graded : graded.filter((p) => p.result === (f === "won" ? "W" : "L"));
+  const m = LEAGUE_BY_ID[l.league];
+  return (
+    <>
+      <div className="drawer-bg" onClick={onClose} />
+      <aside className="drawer league-drawer" role="dialog" aria-label={leagueName(l.league)}>
+        <div className="row" style={{ gap: 10, flexWrap: "nowrap" }}>
+          <LeagueFlag league={m} size={18} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <b style={{ fontSize: 17, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{leagueName(l.league)}</b>
+            <span className="row muted" style={{ fontSize: 12.5, gap: 6 }}>{t("{n} days", { n: days })}<SkillPill s={l.status} /></span>
+          </div>
+          <button className="icon-btn" aria-label={t("Close")} onClick={onClose}><Icon name="x" /></button>
+        </div>
+        {!d ? <div style={{ marginTop: 14 }}><Skeleton rows={5} h={62} /></div> : (
+          <>
+            <div className="grid g-3 stagger" style={{ gap: 8, margin: "14px 0 12px" }}>
+              {[[t("Won"), won, GREEN], [t("Lost"), lost, RED], [t("Units"), `${signed(units, 1)}u`, units >= 0 ? GREEN : RED]].map(([k, v, c]) => (
+                <div key={k} className="card flat tight" style={{ padding: "10px 12px" }}><span className="dim" style={{ fontSize: 11.5 }}>{k}</span><div className="num" style={{ fontSize: 22, fontWeight: 750, letterSpacing: "-.02em", color: c }}>{v}</div></div>
+              ))}
+            </div>
+            <div className="seg" style={{ alignSelf: "flex-start" }}>
+              {[["all", "All", graded.length], ["won", "Won", won], ["lost", "Lost", lost]].map(([k, lab, n]) => (
+                <button key={k} className={f === k ? "on" : ""} onClick={() => setF(k)}>{t(lab)}<span className="n">{n}</span></button>
+              ))}
+            </div>
+            <div className="legs-scroll">
+              {list.length ? list.map((p) => <PickRow key={p.id} p={p} league={l.league} />) : <div className="empty" style={{ padding: 22, marginTop: 10 }}>{t("No results in this window yet.")}</div>}
+              {upcoming.length > 0 && (
+                <>
+                  <div className="nav-label" style={{ margin: "16px 0 10px" }}>{t("Upcoming")} · {upcoming.length}</div>
+                  {upcoming.map((p) => <PickRow key={p.id} p={p} league={l.league} />)}
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </aside>
+    </>
+  );
+}
+
+function PickRow({ p, league }) {
+  const { tm } = useT();
+  const r = p.result;
+  const scored = p.hs !== null && p.hs !== undefined && p.as !== null && p.as !== undefined;
+  return (
+    <Link href={`/match/${league}/${p.id}`} className="pick-row">
+      <span className={`result-badge sm r-${r || "P"}`}>{r === "W" ? "✓" : r === "L" ? "✗" : r === "V" ? "V" : "…"}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span className="row" style={{ gap: 6, flexWrap: "nowrap", fontWeight: 600, fontSize: 13.5 }}>
+          <TeamLogo team={{ logo: p.homeLogo, short: p.home }} size={16} /><span className="ell">{p.home}</span>
+          <span className="dim">–</span>
+          <TeamLogo team={{ logo: p.awayLogo, short: p.away }} size={16} /><span className="ell">{p.away}</span>
+          {scored && <b className="num" style={{ marginLeft: "auto", flex: "none" }}>{p.hs}-{p.as}</b>}
+        </span>
+        <span className="muted" style={{ fontSize: 12, display: "block", marginTop: 2 }}>{tm(p.label)} {p.estimated ? "≈" : "@"} {odds2(p.odds)} · {dayLabel(p.date)} {localTime(p.date)}</span>
+      </span>
+    </Link>
   );
 }
 

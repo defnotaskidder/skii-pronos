@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Icon from "../components/Icons";
 import { Top } from "../components/Shell";
 import { useBoard } from "../components/Providers";
 import { useT } from "../components/Lang";
 import { LiveCard, MatchRow } from "../components/Match";
-import { Skeleton } from "../components/ui";
+import { LeagueFlag, Skeleton } from "../components/ui";
+import { LEAGUE_BY_ID } from "../../lib/leagues";
 
 export default function Live() {
   const { events, live, loading, liveAt, refresh } = useBoard();
@@ -14,6 +15,24 @@ export default function Live() {
   const soon = useMemo(() => events.filter((e) => e.state === "pre" && new Date(e.date) - Date.now() < 3 * 3600e3 && new Date(e.date) > Date.now() - 15 * 60e3), [events]);
   const ordered = useMemo(() => [...live].sort((a, b) => (a.top?.rank ?? 99) - (b.top?.rank ?? 99)), [live]);
   const topLive = ordered.filter((e) => e.top).length;
+  // the single best pick playing right now: the best-ranked top pick, else the likeliest priced pick
+  const bestId = useMemo(() => {
+    const top = live.filter((e) => e.top).sort((a, b) => a.top.rank - b.top.rank)[0];
+    if (top) return top.id;
+    const withPick = live.filter((e) => e.a?.pick?.key);
+    const priced = withPick.filter((e) => !e.a.pick.estimated);
+    const best = (priced.length ? priced : withPick).sort((a, b) => (b.a.pick.safe ?? b.a.pick.p ?? 0) - (a.a.pick.safe ?? a.a.pick.p ?? 0))[0];
+    return best?.id || null;
+  }, [live]);
+  // which leagues are live right now, the ones holding top picks first
+  const leagues = useMemo(() => {
+    const m = new Map();
+    for (const e of live) { const x = m.get(e.league) || { id: e.league, n: 0, top: 0 }; x.n++; if (e.top) x.top++; m.set(e.league, x); }
+    return [...m.values()].sort((a, b) => b.top - a.top || b.n - a.n || (LEAGUE_BY_ID[a.id]?.tier ?? 9) - (LEAGUE_BY_ID[b.id]?.tier ?? 9));
+  }, [live]);
+  const [lg, setLg] = useState("all");
+  useEffect(() => { if (lg !== "all" && !leagues.some((x) => x.id === lg)) setLg("all"); }, [leagues, lg]);
+  const shown = lg === "all" ? ordered : ordered.filter((e) => e.league === lg);
   const justEnded = useMemo(() => events.filter((e) => e.state === "post" && Date.now() - new Date(e.date) < 4 * 3600e3).slice(-8).reverse(), [events]);
 
   return (
@@ -29,9 +48,19 @@ export default function Live() {
         </div>
       ) : (
         <>
+          {leagues.length > 1 && (
+            <div className="chips live-bar" style={{ marginBottom: 14 }} aria-label={t("Live leagues")}>
+              <button className={`chip ${lg === "all" ? "on" : ""}`} onClick={() => setLg("all")}><Icon name="live" size={14} />{t("All live")}<span className="n">{live.length}</span></button>
+              {leagues.map((x) => { const L = LEAGUE_BY_ID[x.id]; return (
+                <button key={x.id} className={`chip ${lg === x.id ? "on" : ""}`} onClick={() => setLg(lg === x.id ? "all" : x.id)} title={L?.name}>
+                  {x.top > 0 && <span aria-hidden="true">🔥</span>}<LeagueFlag league={L} size={13} />{L?.short || L?.name || x.id}<span className="n">{x.n}</span>
+                </button>
+              ); })}
+            </div>
+          )}
           {topLive > 0 && <div className="top-banner">🔥 {t("{n} of the day's top picks are live — they're highlighted and shown first.", { n: topLive })}</div>}
-          <div className="grid stagger" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(268px, 1fr))", marginBottom: 26 }}>
-            {ordered.map((e) => <LiveCard key={e.id} ev={e} />)}
+          <div className="grid stagger" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(268px, 1fr))", marginBottom: 26, paddingTop: 8 }}>
+            {shown.map((e) => <LiveCard key={e.id} ev={e} best={e.id === bestId} />)}
           </div>
         </>
       )}
