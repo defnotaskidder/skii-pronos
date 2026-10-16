@@ -11,7 +11,7 @@ const Ctx = createContext(null);
 export const useNotify = () => useContext(Ctx);
 
 const K = { items: "skii-notifs", prefs: "skii-notif-prefs", follows: "skii-follows" };
-export const DEFAULT_PREFS = { kickoff: true, goals: true, cards: true, final: true, coupon: true, results: true, value: true, moves: true, browser: false };
+export const DEFAULT_PREFS = { toppicks: true, kickoff: true, goals: true, cards: true, final: true, coupon: true, results: true, value: true, moves: true, browser: false };
 
 export function NotifyProvider({ children }) {
   const { t } = useT();
@@ -136,4 +136,4 @@ export function NotifyProvider({ children }) {
   );
 }
 
-export const NICON = { goal: "ball", kickoff: "clock", final: "check", red: "x", coupon: "ticket", result: "trophy", follow: "bell", info: "bell" };
+export const NICON = { top: "sparkles", goal: "ball", kickoff: "clock", final: "check", red: "x", coupon: "ticket", result: "trophy", follow: "bell", info: "bell" };

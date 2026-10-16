@@ -6,6 +6,7 @@ import { useT } from "./Lang";
 import { usePush } from "./Push";
 
 const ROWS = [
+  ["toppicks", "Top picks", "When one of the day's top 10 picks kicks off, and its result"],
   ["kickoff", "Kick-off", "When a followed match starts"],
   ["goals", "Goals", "Every goal in followed matches"],
   ["cards", "Red cards", "Sendings-off in followed matches"],

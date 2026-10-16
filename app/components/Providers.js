@@ -6,6 +6,7 @@ import { LangProvider, useT } from "./Lang";
 import { useAuth } from "./Auth";
 import { load, save } from "./store";
 import { product, hitChance } from "../../lib/coupon";
+import { settle } from "../../lib/model";
 
 // ---------------- board data (shared by every page) ----------------
 const DataCtx = createContext(null);
@@ -235,6 +236,36 @@ function SyncProvider({ children }) {
   return children;
 }
 
+// While the site is open: a toast (and browser notification) when one of the day's top picks
+// kicks off, and when it is won or lost. Games already live when the page opens don't alert.
+function TopPickWatcher() {
+  const { events } = useBoard();
+  const { push, prefs } = useNotify();
+  const { t, tm } = useT();
+  const seen = useRef(null);
+  useEffect(() => {
+    if (!events.length) return;
+    const cur = {};
+    for (const e of events) if (e.top) cur[e.id] = e.state;
+    const prev = seen.current;
+    seen.current = cur;
+    if (!prev || prefs.toppicks === false) return;
+    for (const e of events) {
+      if (!e.top || !prev[e.id] || prev[e.id] === e.state) continue;
+      const teams = `${e.home.short} – ${e.away.short}`;
+      const pick = `${tm(e.top.label)} @ ${Number(e.top.odds).toFixed(2)}`;
+      const href = `/match/${e.league}/${e.id}`;
+      if (e.state === "in") push({ kind: "top", title: t("🔥 Top pick #{n} live: {teams}", { n: e.top.rank, teams }), body: pick, href, dedupe: `top-ko-${e.id}` });
+      if (e.state === "post") {
+        const r = settle(e.top.key, e.home.score, e.away.score);
+        const title = r === "W" ? t("✅ Top pick won: {teams}", { teams }) : r === "L" ? t("❌ Top pick lost: {teams}", { teams }) : t("↩️ Top pick void: {teams}", { teams });
+        push({ kind: "result", title, body: `${e.home.score ?? 0}-${e.away.score ?? 0} · ${pick}`, href, dedupe: `top-ft-${e.id}` });
+      }
+    }
+  }, [events]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 // Service worker: push alerts + "add to home screen".
 function ServiceWorker() {
   useEffect(() => { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {}); }, []);
@@ -248,7 +279,7 @@ export default function Providers({ children }) {
       <NotifyProvider>
         <DataProvider>
           <SlipProvider>
-            <TrackProvider><SyncProvider>{children}</SyncProvider><ServiceWorker /></TrackProvider>
+            <TrackProvider><SyncProvider>{children}</SyncProvider><ServiceWorker /><TopPickWatcher /></TrackProvider>
           </SlipProvider>
         </DataProvider>
       </NotifyProvider>

@@ -12,6 +12,8 @@ export default function Live() {
   const { events, live, loading, liveAt, refresh } = useBoard();
   const { t, locale } = useT();
   const soon = useMemo(() => events.filter((e) => e.state === "pre" && new Date(e.date) - Date.now() < 3 * 3600e3 && new Date(e.date) > Date.now() - 15 * 60e3), [events]);
+  const ordered = useMemo(() => [...live].sort((a, b) => (a.top?.rank ?? 99) - (b.top?.rank ?? 99)), [live]);
+  const topLive = ordered.filter((e) => e.top).length;
   const justEnded = useMemo(() => events.filter((e) => e.state === "post" && Date.now() - new Date(e.date) < 4 * 3600e3).slice(-8).reverse(), [events]);
 
   return (
@@ -26,9 +28,12 @@ export default function Live() {
           <small>{soon.length ? t("{n} matches start in the next 3 hours.", { n: soon.length }) : t("Check the upcoming list below.")}</small>
         </div>
       ) : (
-        <div className="grid stagger" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(268px, 1fr))", marginBottom: 26 }}>
-          {live.map((e) => <LiveCard key={e.id} ev={e} />)}
-        </div>
+        <>
+          {topLive > 0 && <div className="top-banner">🔥 {t("{n} of the day's top picks are live — they're highlighted and shown first.", { n: topLive })}</div>}
+          <div className="grid stagger" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(268px, 1fr))", marginBottom: 26 }}>
+            {ordered.map((e) => <LiveCard key={e.id} ev={e} />)}
+          </div>
+        </>
       )}
 
       <div className="card flat tight" style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center" }}>
@@ -39,7 +44,7 @@ export default function Live() {
       {soon.length > 0 && (
         <section style={{ marginBottom: 22 }}>
           <div className="card-head" style={{ padding: "0 4px" }}><h2>{t("Starting soon")}</h2><Link href="/matches" className="link">{t("All matches")} <Icon name="chevron" size={14} /></Link></div>
-          {soon.slice(0, 30).map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
+          {[...soon].sort((a, b) => (a.top?.rank ?? 99) - (b.top?.rank ?? 99) || new Date(a.date) - new Date(b.date)).slice(0, 30).map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
         </section>
       )}
       {justEnded.length > 0 && (

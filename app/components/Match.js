@@ -6,6 +6,7 @@ import { useSlip } from "./Providers";
 import { useNotify } from "./Notify";
 import { useT } from "./Lang";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
+import { settle } from "../../lib/model";
 import { useFlash } from "./Motion";
 import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, liveLabel, localTime, odds2, pct, useNow } from "./ui";
 
@@ -61,9 +62,10 @@ function MatchRowInner({ ev, showLeague = false }) {
   const goal = useFlash(`${hs}-${as}`, 1600) && ev.state === "in";
 
   return (
-    <Link href={href(ev)} className={`mrow fade-in ${ev.state === "in" ? "live" : ""} ${goal ? "goal" : ""}`}>
+    <Link href={href(ev)} className={`mrow fade-in ${ev.state === "in" ? "live" : ""} ${goal ? "goal" : ""} ${ev.top ? "top" : ""}`}>
       <div className="when">
         <StatusPill ev={ev} />
+        {ev.top && <span className="top-badge" title={t("One of the day's top 10 picks")}>🔥 #{ev.top.rank}</span>}
         <small>{ev.state === "pre" ? dayLabel(ev.date) : showLeague ? L?.short : ""}{ev.state === "pre" && showLeague ? ` · ${L?.short}` : ""}</small>
       </div>
       <div className="teams">
@@ -127,7 +129,7 @@ function LiveCardInner({ ev }) {
   const goal = useFlash(`${ev.home.score}-${ev.away.score}`, 1600);
   const now = useNow();
   return (
-    <Link href={href(ev)} className={`lcard ${goal ? "goal" : ""}`}>
+    <Link href={href(ev)} className={`lcard ${goal ? "goal" : ""} ${ev.top ? "top" : ""}`}>
       <div className="row" style={{ gap: 8 }}>
         <span className="pill live">{liveLabel(ev, now)}</span>
         <span className="muted row" style={{ fontSize: 12, gap: 6, flexWrap: "nowrap", minWidth: 0, flex: 1 }}><LeagueFlag league={L} size={12} /><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{L?.name}</span></span>
@@ -138,13 +140,27 @@ function LiveCardInner({ ev }) {
         <span className="s"><Score v={ev.home.score ?? 0} /><span className="dim"> : </span><Score v={ev.away.score ?? 0} /></span>
         <span className="t"><TeamLogo team={ev.away} size={40} /><span>{ev.away.short}</span></span>
       </div>
-      {ev.a?.pick ? (
+      {ev.top ? <TopLive ev={ev} /> : ev.a?.pick ? (
         <div className="row" style={{ justifyContent: "space-between", fontSize: 12.5 }}>
           <span className="muted">{t("Pre-match pick")}</span>
           <b style={{ maxWidth: 150, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tm(ev.a.pick.label)}</b>
         </div>
       ) : <div className="muted" style={{ fontSize: 12.5 }}>{ev.sport === "soccer" ? t("Tap for live analysis") : ev.detail}</div>}
     </Link>
+  );
+}
+
+// A live top pick: the locked pre-match pick and where it stands at the current score.
+function TopLive({ ev }) {
+  const { t, tm } = useT();
+  const r = settle(ev.top.key, ev.home.score ?? 0, ev.away.score ?? 0);
+  const [cls, txt] = r === "W" ? ["ok", t("On track")] : r === "V" ? ["mid", t("Void for now")] : ["risk", t("At risk")];
+  return (
+    <div className="top-live">
+      <span className="top-badge">🔥 {t("Top pick #{n}", { n: ev.top.rank })}</span>
+      <b>{tm(ev.top.label)} <span className="muted">@ {odds2(ev.top.odds)}</span></b>
+      <span className={`top-state ${cls}`}>{txt}</span>
+    </div>
   );
 }
 
