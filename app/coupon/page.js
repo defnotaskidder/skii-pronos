@@ -41,7 +41,9 @@ export default function CouponPage() {
       <div className="grid g-match">
         <div className="stack">
           {data ? (
-            <CouponCard coupon={data.safe} title={t("Coupon du jour")} eyebrow={t("Safe · ~2.5 odds")} footer={<CouponActions coupon={data.safe} title={t("Coupon du jour")} />} />
+            <CouponCard coupon={data.safe} title={t("Coupon du jour")} eyebrow={t("Safe · ~2.5 odds")}
+              sub={data.reviewed ? t("The day's safest picks · football only · real bookmaker prices · checked by AI") : t("The day's safest picks · football only · real bookmaker prices")}
+              footer={<CouponActions coupon={data.safe} title={t("Coupon du jour")} />} />
           ) : <section className="card hero glow"><Skeleton rows={4} h={60} /></section>}
           {data?.dropped?.length > 0 && (
             <section className="card flat">
@@ -50,7 +52,7 @@ export default function CouponPage() {
             </section>
           )}
           {data?.grosse && (
-            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("~30 odds · {chance}", { chance: chanceText(data.grosse.chance, lang) })} glow={false} compact icon="bolt"
+            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("~30 odds · {chance}", { chance: chanceText(data.grosse.chance, lang) })} sub={t("Football only · real bookmaker prices")} glow={false} compact icon="bolt"
               footer={<CouponActions coupon={data.grosse} title={t("Grosse cote du jour")} extra={<Link href="/grosse-cote" className="btn soft"><Icon name="bolt" />{t("Grosse cote generator")}</Link>} />} />
           )}
         </div>

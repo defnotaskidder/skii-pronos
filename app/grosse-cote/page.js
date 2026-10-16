@@ -51,7 +51,7 @@ export default function GrosseCote() {
       <div className="grid g-match">
         <div className="stack">
           {data ? (
-            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("~30 odds · {n} legs", { n: data.grosse?.legs?.length || 0 }) + (data.reviewed ? t(" · AI-checked") : "")} icon="bolt"
+            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("~30 odds · {n} legs", { n: data.grosse?.legs?.length || 0 }) + (data.reviewed ? t(" · AI-checked") : "")} sub={t("Football only · real bookmaker prices")} icon="bolt"
               footer={<CouponActions coupon={data.grosse} title={t("Grosse cote du jour")} />} />
           ) : <section className="card hero glow"><Skeleton rows={4} h={60} /></section>}
 

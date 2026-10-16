@@ -10,6 +10,8 @@ import { useFlash } from "./Motion";
 import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, liveLabel, localTime, odds2, pct, useNow } from "./ui";
 
 export const href = (ev) => `/match/${ev.league}/${ev.id}`;
+// Moneyline labels as the engine words them (lib/model.js): hockey, basketball and NFL prices include overtime.
+const WIN = { hockey: " win (incl. OT & SO)", basketball: " win (incl. OT)", football: " win (incl. OT)" };
 
 // A market from the model (or a raw 1X2 price) → slip leg.
 export function toLeg(ev, m) {
@@ -49,9 +51,9 @@ function MatchRowInner({ ev, showLeague = false }) {
   const o = ev.odds;
   const isSoccer = ev.sport === "soccer";
   const prices = o ? [
-    ["1", o.home, `${ev.home.short} win`, a?.probs?.h],
+    ["1", o.home, `${ev.home.short}${WIN[ev.sport] || " win"}`, a?.probs?.h],
     ...(isSoccer ? [["X", o.draw, "Draw", a?.probs?.d]] : []),
-    ["2", o.away, `${ev.away.short} win`, a?.probs?.a],
+    ["2", o.away, `${ev.away.short}${WIN[ev.sport] || " win"}`, a?.probs?.a],
   ].filter((x) => x[1]) : [];
   const done = ev.state === "post";
   const hs = ev.home.score, as = ev.away.score;

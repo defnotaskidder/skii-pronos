@@ -69,6 +69,15 @@ export function CouponActions({ coupon, title, extra }) {
   );
 }
 
+// How the model has done in this leg's league (captured when the daily coupon was built).
+function LeagueBadge({ l }) {
+  const { t } = useT();
+  const s = l.leagueStatus;
+  if (s !== "strong" && s !== "weak") return null;
+  const rec = l.leagueRecord?.n ? ` · ${l.leagueRecord.w}/${l.leagueRecord.n}` : "";
+  return <span className={`pill ${s === "strong" ? "green" : "amber"}`} title={t("The model's record in this league")}>{t(s === "strong" ? "Strong league" : "Weak league")}{rec}</span>;
+}
+
 // Live state of one leg: kick-off time, live score + minute, or the final result.
 function LegStatus({ l }) {
   const { t } = useT();
@@ -93,8 +102,10 @@ export function CouponLegs({ legs, compact = false }) {
             <span className="lg-main">
               <b>{tm(l.label)}</b>
               <small>{l.home} – {l.away} · {dayLabel(l.date)} {localTime(l.date)}{!compact && LEAGUE_BY_ID[l.league] ? ` · ${LEAGUE_BY_ID[l.league].name}` : ""}</small>
-              {!compact && l.note ? <small style={{ color: "#c4b5fd" }}>{t("AI:")} {l.note}</small> : null}
-              <LegStatus l={l} />
+              {!compact && l.note ? <small style={{ color: "#c4b5fd", whiteSpace: "normal" }}>{t("AI:")} {l.note}</small> : null}
+              {l.leagueStatus === "strong" || l.leagueStatus === "weak" || l.result || l.live?.result || l.live?.state === "in" ? (
+                <span style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}><LeagueBadge l={l} /><LegStatus l={l} /></span>
+              ) : null}
             </span>
             <span className="lg-od">
               <b className="num">{l.estimated ? "≈" : ""}{odds2(l.odds)}</b>
@@ -107,7 +118,7 @@ export function CouponLegs({ legs, compact = false }) {
   );
 }
 
-export function CouponCard({ coupon, title, eyebrow, compact = false, glow = true, footer, icon }) {
+export function CouponCard({ coupon, title, eyebrow, sub, compact = false, glow = true, footer, icon }) {
   const { t, lang } = useT();
   if (!coupon) return null;
   const has = coupon.legs?.length > 0;
@@ -133,6 +144,7 @@ export function CouponCard({ coupon, title, eyebrow, compact = false, glow = tru
           </div>
         )}
       </div>
+      {sub && <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>{sub}</div>}
       {has ? (
         <>
           <CouponLegs legs={coupon.legs} compact={compact} />

@@ -12,7 +12,12 @@ import { LEAGUES, LEAGUE_BY_ID, SPORT_LABEL } from "../../lib/leagues";
 const STATES = [["all", "All"], ["in", "Live"], ["pre", "Upcoming"], ["post", "Finished"]];
 const SORTS = [["time", "Kick-off"], ["confidence", "Best picks"]];
 const CATS = [["all", "All competitions"], ["men", "Men's"], ["women", "Women's"], ["youth", "Youth & college"]];
-const catOf = (id) => { const L = LEAGUE_BY_ID[id]; return !L ? "men" : L.women ? "women" : L.tier === 6 ? "youth" : "men"; };
+const catOf = (id) => { const L = LEAGUE_BY_ID[id]; return !L ? "men" : L.women ? "women" : L.tier === 6 || /college/.test(id) ? "youth" : "men"; };
+// quick filters for the leagues people bet on most (shown when they have matches)
+const TOP = ["uefa.champions", "eng.1", "esp.1", "ger.1", "ita.1", "fra.1", "uefa.europa", "rus.1", "nba", "nhl"];
+// league order: by tier, then the curated order (top flights before college and youth competitions)
+const ORDERED = LEAGUES.map((l, i) => [l, i]).sort((a, b) => a[0].tier - b[0].tier || a[1] - b[1]).map(([l]) => l);
+const ORDER = Object.fromEntries(ORDERED.map((l, i) => [l.id, i]));
 const PER_LEAGUE = 8; // rows shown per league before "Show all"
 const RANK = { High: 4, "Med-High": 3, Medium: 2, Low: 1, Skip: 0 };
 const STATE_ORDER = { in: 0, pre: 1, post: 2 };
@@ -22,7 +27,7 @@ const byState = (a, b) => (STATE_ORDER[a.state] - STATE_ORDER[b.state])
 
 function Matches() {
   const params = useSearchParams();
-  const { events, loading, error, updated } = useBoard();
+  const { events, loading, error, updated, skill } = useBoard();
   const { t } = useT();
   const [state, setState] = useState("all");
   const [day, setDay] = useState("all");
@@ -76,12 +81,11 @@ function Matches() {
 
   const grouped = useMemo(() => {
     if (sort !== "time") return null;
-    const order = LEAGUES.map((l) => l.id);
     const g = {};
     for (const e of list) (g[e.league] = g[e.league] || []).push(e);
     // leagues with a live game first, then ones with games still to play, finished-only last
     const rank = (evs) => (evs.some((e) => e.state === "in") ? 0 : evs.some((e) => e.state === "pre") ? 1 : 2);
-    return Object.entries(g).sort((a, b) => rank(a[1]) - rank(b[1]) || order.indexOf(a[0]) - order.indexOf(b[0]));
+    return Object.entries(g).sort((a, b) => rank(a[1]) - rank(b[1]) || (ORDER[a[0]] ?? 1e4) - (ORDER[b[0]] ?? 1e4));
   }, [list, sort]);
 
   const sports = [...new Set(events.map((e) => e.sport))];
@@ -117,9 +121,22 @@ function Matches() {
           <span style={{ width: 1, background: "var(--line-2)", margin: "4px 4px", flex: "none" }} />
           {CATS.map(([k, l]) => <button key={k} className={`chip ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}>{t(l)}</button>)}
         </div>
+        {TOP.some((id) => leagueCounts[id] || league === id) && (
+          <div className="chips" role="group" aria-label={t("Top leagues")}>
+            <span className="muted" style={{ flex: "none", alignSelf: "center", fontSize: 12, fontWeight: 700, paddingRight: 2 }}>⭐ {t("Top leagues")}</span>
+            {TOP.filter((id) => leagueCounts[id] || league === id).map((id) => {
+              const L = LEAGUE_BY_ID[id];
+              return (
+                <button key={id} className={`chip ${league === id ? "on" : ""}`} onClick={() => setLeague(league === id ? "all" : id)}>
+                  <LeagueFlag league={L} size={13} />{L.name}<span className="n">{leagueCounts[id] || 0}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className="chips">
           <button className={`chip ${league === "all" ? "on" : ""}`} onClick={() => setLeague("all")}>{t("All leagues")}</button>
-          {LEAGUES.filter((l) => leagueCounts[l.id]).map((l) => (
+          {ORDERED.filter((l) => leagueCounts[l.id]).map((l) => (
             <button key={l.id} className={`chip ${league === l.id ? "on" : ""}`} onClick={() => setLeague(league === l.id ? "all" : l.id)}>
               <LeagueFlag league={l} size={13} />{l.name}<span className="n">{leagueCounts[l.id]}</span>
             </button>
@@ -134,10 +151,11 @@ function Matches() {
         const L = LEAGUE_BY_ID[lid];
         return (
           <section key={lid} className="league-block">
-            <div className="league-head">
+            <div className="league-head" style={{ flexWrap: "wrap", rowGap: 6 }}>
               <LeagueFlag league={L} size={16} /><b>{L.name}</b>
               <span className="muted">{evs.length === 1 ? t("{n} match", { n: 1 }) : t("{n} matches", { n: evs.length })}</span>
               {evs.some((e) => e.state === "in") && <span className="pill live">{t("{n} live", { n: evs.filter((e) => e.state === "in").length })}</span>}
+              <SkillBadge s={skill?.[lid]} />
             </div>
             {(open[lid] || league !== "all" ? evs : evs.slice(0, PER_LEAGUE)).map((e) => <MatchRow key={e.id} ev={e} />)}
             {evs.length > PER_LEAGUE && league === "all" && (
@@ -155,6 +173,14 @@ function Matches() {
       )}
     </>
   );
+}
+
+// What the engine has learned about a league from its graded picks: only clear verdicts show.
+function SkillBadge({ s }) {
+  const { t } = useT();
+  if (s?.s === "strong") return <span className="pill green" title={t("Picks here win more often than the engine expected")}>🔥 {t("Strong here · {w}/{n}", { w: s.w, n: s.n })}</span>;
+  if (s?.s === "weak") return <span className="pill red" title={t("Picks here win less often than the engine expected")}>⚠ {t("Weak here")}</span>;
+  return null;
 }
 
 export default function Page() {

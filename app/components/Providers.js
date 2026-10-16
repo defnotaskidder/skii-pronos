@@ -10,6 +10,7 @@ import { product, hitChance } from "../../lib/coupon";
 // ---------------- board data (shared by every page) ----------------
 const DataCtx = createContext(null);
 export const useBoard = () => useContext(DataCtx);
+export const useData = useBoard;
 
 // True when nothing a row displays has changed, so the previous object (and its rendered row) can be reused.
 const sameEvent = (a, b) => a.state === b.state && a.detail === b.detail && a.minute === b.minute && a.postponed === b.postponed
@@ -18,10 +19,11 @@ const sameEvent = (a, b) => a.state === b.state && a.detail === b.detail && a.mi
   && a.a?.pick?.key === b.a?.pick?.key && a.a?.pick?.odds === b.a?.pick?.odds && a.a?.pick?.tier === b.a?.pick?.tier && a.a?.pick?.safe === b.a?.pick?.safe
   && a.a?.value?.key === b.a?.value?.key && a.a?.value?.ev === b.a?.value?.ev && a.done?.result === b.done?.result && a.done?.label === b.done?.label;
 
-// Full board (fixtures + picks) every 60–120 s; while anything is live or about to start, a
-// light live feed (/api/live) is merged in every 15 s so scores, minutes and states stay current.
+// Full board (fixtures + picks + learned league skill) every 60–120 s; while anything is live or
+// about to start, a light live feed (/api/live) is merged in every 15 s so scores, minutes and
+// states stay current.
 function DataProvider({ children }) {
-  const [state, setState] = useState({ events: [], loading: true, error: "", updated: null, liveAt: null });
+  const [state, setState] = useState({ events: [], skill: {}, loading: true, error: "", updated: null, liveAt: null });
   const eventsRef = useRef([]);
   const refresh = useCallback(async () => {
     try {
@@ -31,7 +33,11 @@ function DataProvider({ children }) {
       const at = Date.now();
       const prev = new Map(eventsRef.current.map((e) => [e.id, e]));
       eventsRef.current = (d.events || []).map((e) => { const p = prev.get(e.id); return p && sameEvent(p, e) ? p : { ...e, _at: at }; });
-      setState({ events: eventsRef.current, loading: false, error: d.error || "", updated: d.updated || now, liveAt: now });
+      // league skill { [league]: { s, n, w, e } }: kept (same object) when unchanged or missing
+      setState((s) => ({
+        ...s, events: eventsRef.current, loading: false, error: d.error || "", updated: d.updated || now, liveAt: now,
+        skill: d.skill && typeof d.skill === "object" && JSON.stringify(d.skill) !== JSON.stringify(s.skill) ? d.skill : s.skill,
+      }));
       return eventsRef.current;
     } catch {
       setState((s) => ({ ...s, loading: false, error: "offline" }));
