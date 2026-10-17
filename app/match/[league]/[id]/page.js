@@ -13,6 +13,8 @@ const STAT_LABEL = {
   possessionPct: "Possession %", totalShots: "Shots", shotsOnTarget: "Shots on target", wonCorners: "Corners", foulsCommitted: "Fouls",
   yellowCards: "Yellow cards", redCards: "Red cards", saves: "Saves", offsides: "Offsides", accuratePasses: "Accurate passes",
   fieldGoalPct: "FG %", threePointFieldGoalPct: "3PT %", totalRebounds: "Rebounds", assists: "Assists", turnovers: "Turnovers",
+  shots: "Shots", hits: "Hits", blockedShots: "Blocked shots", powerPlayGoals: "Power-play goals", powerPlayOpportunities: "Power plays",
+  faceoffsWon: "Faceoffs won", penaltyMinutes: "Penalty minutes", giveaways: "Giveaways", takeaways: "Takeaways",
 };
 
 export default function MatchPage({ params }) {
@@ -111,7 +113,7 @@ export default function MatchPage({ params }) {
         </div>
         {(data.live?.probs || a?.probs) && (
           <div style={{ marginTop: 18 }}>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>{data.live ? t("Live win probability · {m}'", { m: data.live.minute }) : t("Win probability")}</div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>{data.live ? (data.live.label ? t("Live win probability · {label}", { label: data.live.label }) : t("Live win probability · {m}'", { m: data.live.minute })) : t("Win probability")}</div>
             <TriBar {...(data.live?.probs || a.probs)} labels={[ev.home.short, ev.away.short]} />
           </div>
         )}
@@ -136,7 +138,7 @@ export default function MatchPage({ params }) {
             {ev.odds && <div className="kv"><span>{ev.odds.provider} 1X2</span><b className="num">{odds2(ev.odds.home)} / {ev.odds.draw ? odds2(ev.odds.draw) + " / " : ""}{odds2(ev.odds.away)}</b></div>}
             {ev.odds?.homeOpen && <div className="kv"><span>{t("Opening 1X2")}</span><b className="num">{odds2(ev.odds.homeOpen)} / {ev.odds.drawOpen ? odds2(ev.odds.drawOpen) + " / " : ""}{odds2(ev.odds.awayOpen)}</b></div>}
             {ev.odds?.total && <div className="kv"><span>{t("Goal line")}</span><b className="num">O/U {ev.odds.total.line} · {odds2(ev.odds.total.over)} / {odds2(ev.odds.total.under)}</b></div>}
-            <div className="kv"><span>{t("Data quality")}</span><b>{a?.quality === "market" ? t("Full market") : a?.quality === "partial" ? t("1X2 only") : a?.quality === "stats" ? t("Table & form only") : "—"}</b></div>
+            <div className="kv"><span>{t("Data quality")}</span><b>{a?.quality === "market" ? t("Full market") : a?.quality === "partial" ? t("1X2 only") : a?.quality === "stats" ? t("Table & form only") : a?.quality === "blind" ? t("League averages only") : "—"}</b></div>
             {ev.venue && <div className="kv"><span>{t("Venue")}</span><b>{ev.venue}</b></div>}
           </section>
         </div>
@@ -223,6 +225,9 @@ function Prono({ ev, a }) {
           {a.notes.map((n, i) => <div key={i} className="row" style={{ flexWrap: "nowrap", alignItems: "flex-start", marginBottom: 6 }}><Icon name="trend" size={16} style={{ color: "var(--purple)", marginTop: 2 }} /><span>{noteText(lang, n)}</span></div>)}
         </section>
       )}
+      {ev.sport === "hockey" && (
+        <p className="note">{t("Hockey model: regulation goals (Poisson, trained on five NHL seasons) + overtime and shootout. Probabilities are calibrated to the market where it has prices; the pick is the market with the best balance of hit chance and price (minimum ~1.20).")}</p>
+      )}
       <p className="note">{t("Model: {basis}. Probabilities are calibrated to the market; the pick is the market with the best balance of hit chance and price (minimum ~1.20).", { basis: basisLabel(lang, a.basis) })}</p>
     </div>
   );
@@ -283,7 +288,7 @@ function LiveTab({ data }) {
     <div className="stagger stack" style={{ gap: 14 }}>
       {live && (
         <section className="card">
-          <div className="card-head"><span className="pill live">{t("LIVE MODEL")}</span><h3>{t("{m}' re-pricing", { m: live.minute })}</h3></div>
+          <div className="card-head"><span className="pill live">{t("LIVE MODEL")}</span><h3>{live.label ? t("{label} re-pricing", { label: live.label }) : t("{m}' re-pricing", { m: live.minute })}</h3></div>
           <div className="grid g-3" style={{ gap: 12 }}>
             <div className="card tight flat" style={{ textAlign: "center", background: "rgba(255,255,255,.03)" }}>
               <div className="eyebrow">{t("Next goal")}</div>
@@ -298,7 +303,8 @@ function LiveTab({ data }) {
               </div>
             ))}
           </div>
-          <div className="kv" style={{ marginTop: 10 }}><span>{t("Both teams score (final)")}</span><b>{pct(live.btts)}</b></div>
+          {live.btts !== undefined && <div className="kv" style={{ marginTop: 10 }}><span>{t("Both teams score (final)")}</span><b>{pct(live.btts)}</b></div>}
+          {live.toOT !== undefined && live.period <= 3 && <div className="kv" style={{ marginTop: 10 }}><span>{t("Goes to overtime (final)")}</span><b>{pct(live.toOT)}</b></div>}
           <div className="kv"><span>{t("Goals still expected")}</span><b className="num">{live.remainingXg.home} – {live.remainingXg.away}</b></div>
         </section>
       )}

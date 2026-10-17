@@ -4,3 +4,6 @@ node_modules
 .env
 desktop/node_modules/
 desktop/dist/
+
+# trainer data cache
+.cache/

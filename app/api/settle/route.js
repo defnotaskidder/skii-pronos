@@ -22,7 +22,7 @@ export async function POST(request) {
     if (!e) return { eventId: p.eventId, key: p.key, result: null };
     if (e.postponed) return { eventId: p.eventId, key: p.key, result: "V", score: null };
     if (!e.completed) return { eventId: p.eventId, key: p.key, result: null, state: e.state };
-    return { eventId: p.eventId, key: p.key, result: settle(p.key, e.home.score, e.away.score), score: `${e.home.score}-${e.away.score}` };
+    return { eventId: p.eventId, key: p.key, result: settle(p.key, e.home.score, e.away.score, { sport: e.sport, ot: e.ot }), score: `${e.home.score}-${e.away.score}` };
   });
   return NextResponse.json({ results });
 }

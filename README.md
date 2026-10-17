@@ -27,6 +27,10 @@ Football predictions in French (English on request): every competition ESPN cove
 6. **Coupons** — the grosse-cote optimizer keeps, for each match, the leg that gives up the least chance per unit of odds and finishes with the leg that closes the gap for the smallest loss.
 7. **Live** — remaining goals re-priced from minute, score, red cards and shots.
 
+### Hockey
+
+Hockey has its own engine (`lib/hockey.js`, maths in `lib/hockey-core.js`): regulation goals as a Poisson pair with a fitted tie inflation, then overtime (3-on-3, decided by a goal about two thirds of the time) and the shootout. Expected goals come from a strength model — league scoring rate, home ice, goals-for/against and shot volumes (ESPN team statistics), last-ten form, the hockey Elo gap and rest days (back-to-backs) — whose weights `scripts/train-hockey.mjs` fits on five NHL seasons walk-forward (`npm run train:hockey`, report in `scripts/hockey-report.md`, parameters in `lib/hockey-params.json`). Where DraftKings prices the game, expected goals are solved from the de-vigged moneyline, total and puck line and the strength model nudges them; college and tournament games run on the strength model alone. Markets: moneyline (incl. OT & SO), 60-minute 1X2 and double chance, puck line ±1.5, totals 4.5–7.5 (OT goal counts, shootout goal doesn't), team totals, overtime yes/no, winning margins, exact regulation scores. Settlement knows how each game ended (ESPN's `Final/OT`, `Final/SO`). ESPN carries only the NHL, NCAA men's and women's hockey, the Olympics and the World Cup of Hockey — no KHL, SHL, Liiga or DEL feed exists there, so those leagues can't be loaded yet.
+
 ## Alerts, bots and the daily posts
 
 - **In the browser**: toasts + optional pop-ups while the site is open; **push** alerts with the site closed (Settings → Alerts).

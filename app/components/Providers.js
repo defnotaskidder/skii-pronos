@@ -257,7 +257,7 @@ function TopPickWatcher() {
       const href = `/match/${e.league}/${e.id}`;
       if (e.state === "in") push({ kind: "top", title: t("🔥 Top pick #{n} live: {teams}", { n: e.top.rank, teams }), body: pick, href, dedupe: `top-ko-${e.id}` });
       if (e.state === "post") {
-        const r = settle(e.top.key, e.home.score, e.away.score);
+        const r = settle(e.top.key, e.home.score, e.away.score, { sport: e.sport, ot: e.ot });
         const title = r === "W" ? t("✅ Top pick won: {teams}", { teams }) : r === "L" ? t("❌ Top pick lost: {teams}", { teams }) : t("↩️ Top pick void: {teams}", { teams });
         push({ kind: "result", title, body: `${e.home.score ?? 0}-${e.away.score ?? 0} · ${pick}`, href, dedupe: `top-ft-${e.id}` });
       }

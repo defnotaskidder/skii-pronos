@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "league": {
+    "mu": 3.008,
+    "S": 29.78,
+    "regShare": 0.9643
+  },
+  "goals": {
+    "home": 0.0621,
+    "kG": 41.9131,
+    "kS": 5.1362,
+    "tau": 0.5243,
+    "playoff": -0.033,
+    "form": -0.053,
+    "elo": 0.2135,
+    "spread": 1,
+    "full": {
+      "aG": 0.5108,
+      "aS": 0.479,
+      "dG": 0.498,
+      "dS": 0.7685
+    },
+    "noShots": {
+      "aG": 0.6301,
+      "aS": 0,
+      "dG": 0.7571,
+      "dS": 0
+    },
+    "rest": {
+      "att": -0.0792,
+      "def": 0.0643
+    }
+  },
+  "ot": {
+    "q": 0.6736,
+    "k": 1.2618,
+    "b": 0.0405,
+    "so": {
+      "k": -0.1557,
+      "b": 0.0315
+    }
+  },
+  "elo": {
+    "K": [
+      14.79,
+      10.35,
+      7.39
+    ],
+    "home": 26.2,
+    "otMult": 1.246,
+    "gd": 0.085,
+    "minGames": 5
+  },
+  "market": {
+    "statsWeight": 0.2
+  },
+  "trainedAt": "2026-10-17T00:06:43.817Z",
+  "trained": {
+    "seasons": [
+      "2021-22",
+      "2022-23",
+      "2023-24",
+      "2024-25",
+      "2025-26",
+      "2026-27"
+    ],
+    "games": 7127,
+    "holdout": "2025-26"
+  },
+  "metrics": {
+    "holdout": {
+      "games": 1394,
+      "moneyline": {
+        "logloss": 0.6846,
+        "brier": 0.2458,
+        "accuracy": 0.5538,
+        "baseline": {
+          "logloss": 0.6933,
+          "brier": 0.2501,
+          "homeRate": 0.5407
+        },
+        "eloOnly": {
+          "logloss": 0.6974,
+          "brier": 0.2517
+        }
+      },
+      "regulation3way": {
+        "logloss": 1.0723,
+        "baseline": 1.0848
+      },
+      "totals": {
+        "5.5": {
+          "brier": 0.2442,
+          "baselineBrier": 0.2448,
+          "logloss": 0.6815,
+          "baselineLogloss": 0.6826
+        },
+        "6.5": {
+          "brier": 0.2446,
+          "baselineBrier": 0.2452,
+          "logloss": 0.6824,
+          "baselineLogloss": 0.6836
+        }
+      },
+      "puckLineHomeMinus15": {
+        "brier": 0.2038,
+        "baselineBrier": 0.2103
+      },
+      "meanTotal": {
+        "predicted": 6.221,
+        "actual": 6.148
+      },
+      "calibration": [
+        {
+          "bucket": "10–20%",
+          "n": 1,
+          "predicted": 0.187,
+          "actual": 0
+        },
+        {
+          "bucket": "20–30%",
+          "n": 11,
+          "predicted": 0.271,
+          "actual": 0.364
+        },
+        {
+          "bucket": "30–40%",
+          "n": 98,
+          "predicted": 0.363,
+          "actual": 0.367
+        },
+        {
+          "bucket": "40–50%",
+          "n": 350,
+          "predicted": 0.457,
+          "actual": 0.474
+        },
+        {
+          "bucket": "50–60%",
+          "n": 572,
+          "predicted": 0.55,
+          "actual": 0.516
+        },
+        {
+          "bucket": "60–70%",
+          "n": 285,
+          "predicted": 0.643,
+          "actual": 0.596
+        },
+        {
+          "bucket": "70–80%",
+          "n": 70,
+          "predicted": 0.731,
+          "actual": 0.671
+        },
+        {
+          "bucket": "80–90%",
+          "n": 7,
+          "predicted": 0.816,
+          "actual": 0.857
+        }
+      ],
+      "favourites60": {
+        "n": 472,
+        "predicted": 0.659,
+        "actual": 0.621
+      }
+    }
+  }
+}
