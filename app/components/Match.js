@@ -5,7 +5,7 @@ import Icon from "./Icons";
 import { useSlip } from "./Providers";
 import { useNotify } from "./Notify";
 import { useT } from "./Lang";
-import { LEAGUE_BY_ID } from "../../lib/leagues";
+import { LEAGUE_BY_ID, leagueName } from "../../lib/leagues";
 import { settle } from "../../lib/model";
 import { useFlash } from "./Motion";
 import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, liveLabel, localTime, odds2, pct, useNow } from "./ui";
@@ -124,7 +124,7 @@ function MatchRowInner({ ev, showLeague = false }) {
 }
 
 function LiveCardInner({ ev, best = false }) {
-  const { t, tm } = useT();
+  const { t, tm, lang } = useT();
   const L = LEAGUE_BY_ID[ev.league];
   const goal = useFlash(`${ev.home.score}-${ev.away.score}`, 1600);
   const now = useNow();
@@ -135,7 +135,7 @@ function LiveCardInner({ ev, best = false }) {
       {best && <span className="best-ribbon"><span className="fire" aria-hidden="true">🔥</span>{t("Best live pick")}</span>}
       <div className="row" style={{ gap: 8 }}>
         <span className="pill live">{liveLabel(ev, now)}</span>
-        <span className="muted row" style={{ fontSize: 12, gap: 6, flexWrap: "nowrap", minWidth: 0, flex: 1 }}><LeagueFlag league={L} size={12} /><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{L?.name}</span></span>
+        <span className="muted row" style={{ fontSize: 12, gap: 6, flexWrap: "nowrap", minWidth: 0, flex: 1 }}><LeagueFlag league={L} size={12} /><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{leagueName(L, lang)}</span></span>
         <FollowBtn ev={ev} small />
       </div>
       <div className="score">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { board } from "../../../lib/espn";
+import { oaBoard } from "../../../lib/oddsapi-leagues";
 import { analysedBoard } from "../../../lib/board";
 import { syncBoard, dailySettle, dbEnabled } from "../../../lib/db";
 import { learnFromGames } from "../../../lib/ratings";
@@ -22,7 +23,7 @@ export async function GET(request) {
   const when = request.nextUrl.searchParams.get("when") || "morning";
   const rows = await analysedBoard(2);
   await syncBoard(rows); // even if the board came from the short memo: save picks, grade yesterday/today
-  const older = await board(-2, -3).catch(() => []); // 3 and 2 days ago
+  const older = [...(await board(-2, -3).catch(() => [])), ...(await oaBoard(-2, -3).catch(() => []))]; // 3 and 2 days ago, both feeds
   await syncBoard(older.filter((e) => e.state === "post").map((ev) => ({ ev, analysis: null })));
   const rated = await learnFromGames([...rows.map((r) => r.ev), ...older]);
   const coupons = await dailySettle();

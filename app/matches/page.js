@@ -7,7 +7,7 @@ import { useBoard } from "../components/Providers";
 import { useT } from "../components/Lang";
 import { MatchRow } from "../components/Match";
 import { LeagueFlag, Skeleton, dayLabel, localTime } from "../components/ui";
-import { LEAGUES, LEAGUE_BY_ID, SPORT_LABEL } from "../../lib/leagues";
+import { LEAGUES, LEAGUE_BY_ID, SPORT_LABEL, leagueName } from "../../lib/leagues";
 
 const STATES = [["all", "All"], ["in", "Live"], ["pre", "Upcoming"], ["post", "Finished"]];
 const SORTS = [["time", "Kick-off"], ["confidence", "Best picks"]];
@@ -28,7 +28,7 @@ const byState = (a, b) => (STATE_ORDER[a.state] - STATE_ORDER[b.state])
 function Matches() {
   const params = useSearchParams();
   const { events, loading, error, updated, skill } = useBoard();
-  const { t } = useT();
+  const { t, lang } = useT();
   const [state, setState] = useState("all");
   const [day, setDay] = useState("all");
   const [sport, setSport] = useState("all");
@@ -128,7 +128,7 @@ function Matches() {
               const L = LEAGUE_BY_ID[id];
               return (
                 <button key={id} className={`chip ${league === id ? "on" : ""}`} onClick={() => setLeague(league === id ? "all" : id)}>
-                  <LeagueFlag league={L} size={13} />{L.name}<span className="n">{leagueCounts[id] || 0}</span>
+                  <LeagueFlag league={L} size={13} />{leagueName(L, lang)}<span className="n">{leagueCounts[id] || 0}</span>
                 </button>
               );
             })}
@@ -138,7 +138,7 @@ function Matches() {
           <button className={`chip ${league === "all" ? "on" : ""}`} onClick={() => setLeague("all")}>{t("All leagues")}</button>
           {ORDERED.filter((l) => leagueCounts[l.id]).map((l) => (
             <button key={l.id} className={`chip ${league === l.id ? "on" : ""}`} onClick={() => setLeague(league === l.id ? "all" : l.id)}>
-              <LeagueFlag league={l} size={13} />{l.name}<span className="n">{leagueCounts[l.id]}</span>
+              <LeagueFlag league={l} size={13} />{leagueName(l, lang)}<span className="n">{leagueCounts[l.id]}</span>
             </button>
           ))}
         </div>
@@ -153,7 +153,7 @@ function Matches() {
         return (
           <section key={lid} className="league-block">
             <div className="league-head" style={{ flexWrap: "wrap", rowGap: 6 }}>
-              <LeagueFlag league={L} size={16} /><b>{L.name}</b>
+              <LeagueFlag league={L} size={16} /><b>{leagueName(L, lang)}</b>
               <span className="muted">{evs.length === 1 ? t("{n} match", { n: 1 }) : t("{n} matches", { n: evs.length })}</span>
               {evs.some((e) => e.state === "in") && <span className="pill live">{t("{n} live", { n: evs.filter((e) => e.state === "in").length })}</span>}
               <SkillBadge s={skill?.[lid]} />
@@ -161,7 +161,7 @@ function Matches() {
             {(open[lid] || league !== "all" ? evs : evs.slice(0, cap)).map((e) => <MatchRow key={e.id} ev={e} />)}
             {evs.length > cap && league === "all" && (
               <button className="btn ghost sm" style={{ margin: "2px 0 6px" }} onClick={() => setOpen((o) => ({ ...o, [lid]: !o[lid] }))}>
-                <Icon name={open[lid] ? "down" : "chevron"} />{open[lid] ? t("Show fewer") : t("Show all {n} {league} matches", { n: evs.length, league: L.name })}
+                <Icon name={open[lid] ? "down" : "chevron"} />{open[lid] ? t("Show fewer") : t("Show all {n} {league} matches", { n: evs.length, league: leagueName(L, lang) })}
               </button>
             )}
           </section>

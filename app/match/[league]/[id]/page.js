@@ -8,6 +8,7 @@ import { useT } from "../../../components/Lang";
 import { FollowBtn, toLeg } from "../../../components/Match";
 import { liveLabel, useNow, Form, LeagueFlag, Ring, Skeleton, StatusPill, TeamLogo, Tier, TriBar, dayLabel, localTime, odds2, pct } from "../../../components/ui";
 import { basisLabel, noteText } from "../../../../lib/i18n";
+import { leagueName } from "../../../../lib/leagues";
 
 const STAT_LABEL = {
   possessionPct: "Possession %", totalShots: "Shots", shotsOnTarget: "Shots on target", wonCorners: "Corners", foulsCommitted: "Fouls",
@@ -19,7 +20,7 @@ const STAT_LABEL = {
 
 export default function MatchPage({ params }) {
   const { league, id } = params;
-  const { t } = useT();
+  const { t, lang } = useT();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("prono");
@@ -72,7 +73,7 @@ export default function MatchPage({ params }) {
 
   return (
     <>
-      <Top title={`${ev.home.short} vs ${ev.away.short}`} sub={<span className="row" style={{ gap: 7 }}><LeagueFlag league={data.league} size={13} />{data.league?.name} · {dayLabel(ev.date)} {localTime(ev.date)}{ev.venue ? ` · ${ev.venue}` : ""}</span>}>
+      <Top title={`${ev.home.short} vs ${ev.away.short}`} sub={<span className="row" style={{ gap: 7 }}><LeagueFlag league={data.league} size={13} />{leagueName(data.league, lang)} · {dayLabel(ev.date)} {localTime(ev.date)}{ev.venue ? ` · ${ev.venue}` : ""}</span>}>
         <button className="tile-btn" aria-label={t("Share")} title={shared ? t("Link copied") : t("Share")} onClick={share}><Icon name={shared ? "check" : "send"} /></button>
         <Link href="/matches" className="tile-btn desktop-only" aria-label={t("Back")}><Icon name="back" /></Link>
       </Top>
