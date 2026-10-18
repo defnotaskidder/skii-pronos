@@ -7,3 +7,6 @@ desktop/dist/
 
 # trainer data cache
 .cache/
+
+.vercel
+.env*.local

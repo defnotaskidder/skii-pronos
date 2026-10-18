@@ -16,6 +16,7 @@ const STAT_LABEL = {
   fieldGoalPct: "FG %", threePointFieldGoalPct: "3PT %", totalRebounds: "Rebounds", assists: "Assists", turnovers: "Turnovers",
   shots: "Shots", hits: "Hits", blockedShots: "Blocked shots", powerPlayGoals: "Power-play goals", powerPlayOpportunities: "Power plays",
   faceoffsWon: "Faceoffs won", penaltyMinutes: "Penalty minutes", giveaways: "Giveaways", takeaways: "Takeaways",
+  firstDowns: "First downs", totalOffensivePlays: "Plays", totalYards: "Total yards", yardsPerPlay: "Yards per play", netPassingYards: "Passing yards", rushingYards: "Rushing yards",
 };
 
 export default function MatchPage({ params }) {
@@ -134,11 +135,13 @@ export default function MatchPage({ params }) {
           <AiCard data={data} />
           <section className="card flat">
             <div className="card-head"><h3>{t("Match facts")}</h3></div>
-            {a?.xg && <div className="kv"><span>{t("Expected goals (model)")}</span><b className="num">{a.xg.home} – {a.xg.away}</b></div>}
+            {a?.xg && <div className="kv"><span>{a.unit === "pts" ? t("Expected score (model)") : t("Expected goals (model)")}</span><b className="num">{a.xg.home} – {a.xg.away}</b></div>}
+            {a?.model && <div className="kv"><span>{t("Skii line")}</span><b className="num">{ev.home.short} {a.model.line > 0 ? `+${a.model.line}` : a.model.line} · O/U {a.model.total}</b></div>}
             {data.ratings && <div className="kv"><span>{t("Team strength")}</span><b className="num">{Math.round(data.ratings.home)} – {Math.round(data.ratings.away)}</b></div>}
-            {ev.odds && <div className="kv"><span>{ev.odds.provider} 1X2</span><b className="num">{odds2(ev.odds.home)} / {ev.odds.draw ? odds2(ev.odds.draw) + " / " : ""}{odds2(ev.odds.away)}</b></div>}
-            {ev.odds?.homeOpen && <div className="kv"><span>{t("Opening 1X2")}</span><b className="num">{odds2(ev.odds.homeOpen)} / {ev.odds.drawOpen ? odds2(ev.odds.drawOpen) + " / " : ""}{odds2(ev.odds.awayOpen)}</b></div>}
-            {ev.odds?.total && <div className="kv"><span>{t("Goal line")}</span><b className="num">O/U {ev.odds.total.line} · {odds2(ev.odds.total.over)} / {odds2(ev.odds.total.under)}</b></div>}
+            {ev.odds && <div className="kv"><span>{ev.odds.provider} {ev.sport === "soccer" ? "1X2" : t("Moneyline")}</span><b className="num">{odds2(ev.odds.home)} / {ev.odds.draw ? odds2(ev.odds.draw) + " / " : ""}{odds2(ev.odds.away)}</b></div>}
+            {ev.odds?.homeOpen && <div className="kv"><span>{ev.sport === "soccer" ? t("Opening 1X2") : t("Opening moneyline")}</span><b className="num">{odds2(ev.odds.homeOpen)} / {ev.odds.drawOpen ? odds2(ev.odds.drawOpen) + " / " : ""}{odds2(ev.odds.awayOpen)}</b></div>}
+            {ev.odds?.spread && ev.sport !== "soccer" && <div className="kv"><span>{t("Spread")}</span><b className="num">{ev.home.short} {ev.odds.spread.line > 0 ? `+${ev.odds.spread.line}` : ev.odds.spread.line} · {odds2(ev.odds.spread.home)} / {odds2(ev.odds.spread.away)}</b></div>}
+            {ev.odds?.total && <div className="kv"><span>{a?.unit === "pts" ? t("Points line") : t("Goal line")}</span><b className="num">O/U {ev.odds.total.line} · {odds2(ev.odds.total.over)} / {odds2(ev.odds.total.under)}</b></div>}
             <div className="kv"><span>{t("Data quality")}</span><b>{a?.quality === "market" ? t("Full market") : a?.quality === "partial" ? t("1X2 only") : a?.quality === "stats" ? t("Table & form only") : a?.quality === "blind" ? t("League averages only") : "—"}</b></div>
             {ev.venue && <div className="kv"><span>{t("Venue")}</span><b>{ev.venue}</b></div>}
           </section>
@@ -229,6 +232,9 @@ function Prono({ ev, a }) {
       {ev.sport === "hockey" && (
         <p className="note">{t("Hockey model: regulation goals (Poisson, trained on five NHL seasons) + overtime and shootout. Probabilities are calibrated to the market where it has prices; the pick is the market with the best balance of hit chance and price (minimum ~1.20).")}</p>
       )}
+      {ev.league === "nfl" && (
+        <p className="note">{t("NFL model: a score grid trained on ten seasons of results against the closing lines (key numbers 3, 7, 10, 14) plus overtime and ties. The game's margin and total come from the bookmaker's moneyline, spread and total; every other market is priced from the grid. Skii's own line (Elo, points, yards per play, turnovers, rest) is shown next to the market's.")}</p>
+      )}
       <p className="note">{t("Model: {basis}. Probabilities are calibrated to the market; the pick is the market with the best balance of hit chance and price (minimum ~1.20).", { basis: basisLabel(lang, a.basis) })}</p>
     </div>
   );
@@ -291,12 +297,12 @@ function LiveTab({ data }) {
         <section className="card">
           <div className="card-head"><span className="pill live">{t("LIVE MODEL")}</span><h3>{live.label ? t("{label} re-pricing", { label: live.label }) : t("{m}' re-pricing", { m: live.minute })}</h3></div>
           <div className="grid g-3" style={{ gap: 12 }}>
-            <div className="card tight flat" style={{ textAlign: "center", background: "rgba(255,255,255,.03)" }}>
+            {live.nextGoal && <div className="card tight flat" style={{ textAlign: "center", background: "rgba(255,255,255,.03)" }}>
               <div className="eyebrow">{t("Next goal")}</div>
               <div style={{ fontSize: 15, fontWeight: 750, marginTop: 6 }}>{ev.home.short} {pct(live.nextGoal.home)}</div>
               <div style={{ fontSize: 15, fontWeight: 750 }}>{ev.away.short} {pct(live.nextGoal.away)}</div>
               <div className="muted" style={{ fontSize: 12 }}>{t("No more goals {p}", { p: pct(live.nextGoal.none) })}</div>
-            </div>
+            </div>}
             {live.overs.map((o) => (
               <div key={o.line} className="card tight flat" style={{ display: "grid", placeItems: "center", gap: 6, background: "rgba(255,255,255,.03)" }}>
                 <Ring value={o.p} size={60} stroke={5} />
@@ -305,8 +311,8 @@ function LiveTab({ data }) {
             ))}
           </div>
           {live.btts !== undefined && <div className="kv" style={{ marginTop: 10 }}><span>{t("Both teams score (final)")}</span><b>{pct(live.btts)}</b></div>}
-          {live.toOT !== undefined && live.period <= 3 && <div className="kv" style={{ marginTop: 10 }}><span>{t("Goes to overtime (final)")}</span><b>{pct(live.toOT)}</b></div>}
-          <div className="kv"><span>{t("Goals still expected")}</span><b className="num">{live.remainingXg.home} – {live.remainingXg.away}</b></div>
+          {live.toOT !== undefined && live.toOT < 1 && <div className="kv" style={{ marginTop: 10 }}><span>{t("Goes to overtime (final)")}</span><b>{pct(live.toOT)}</b></div>}
+          <div className="kv"><span>{ev.sport === "football" ? t("Points still expected") : t("Goals still expected")}</span><b className="num">{live.remainingXg.home} – {live.remainingXg.away}</b></div>
         </section>
       )}
       {Object.keys(stats || {}).length > 0 && (

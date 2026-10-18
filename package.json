@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "train:hockey": "node scripts/train-hockey.mjs"
+    "train:hockey": "node scripts/train-hockey.mjs",
+    "train:nfl": "node scripts/nfl-history.mjs && node scripts/train-nfl.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.134.0",

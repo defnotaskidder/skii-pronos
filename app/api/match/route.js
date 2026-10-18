@@ -18,8 +18,10 @@ export async function GET(request) {
     const ev = row ? mergeLive(row.ev, sum.event) : sum.event;
     const tables = await tablesFor([league]);
     let analysis = row?.analysis;
-    if (!analysis) {
-      // finished or outside the board window: price it from the pre-match odds we have
+    if (!analysis || (ev.state === "in" && ev.odds && !["market", "partial"].includes(analysis.quality))) {
+      // finished or outside the board window, or live on a server that never saw the pre-match
+      // prices (the board's copy then fell back to stats): price it from the pre-match odds the
+      // match summary still carries, so the live model re-prices from the market
       analysis = analyse({ ...ev, state: "pre" }, tables[league] || {});
     }
     const live = liveAnalyse(ev, analysis, sum.stats);

@@ -31,7 +31,8 @@ const monthsOf = (startYear) => {
 };
 async function month(ym) {
   const file = path.join(CACHE, `${ym}.json`);
-  if (fs.existsSync(file) && fs.statSync(file).size > 100) return JSON.parse(fs.readFileSync(file, "utf8"));
+  const nowYm = new Date().toISOString().slice(0, 7).replace("-", "");
+  if (fs.existsSync(file) && fs.statSync(file).size > 100 && ym !== nowYm) return JSON.parse(fs.readFileSync(file, "utf8"));
   const url = `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${ym}&limit=1000`;
   process.stdout.write(`  fetching ${ym}…\n`);
   const res = await fetch(url, { headers: { accept: "application/json", "user-agent": "Mozilla/5.0 (compatible; SkiiPronos/1.0)" } });
@@ -125,6 +126,7 @@ function replay(games, P, { eloOnly = false } = {}) {
     if (g.shH !== null && g.shA !== null) { shots += g.shH + g.shA; shotGames += 2; }
     last.set(g.home, g.date); last.set(g.away, g.date);
   }
+  rows.elo = elo; // ratings after the last game (the production run ships them as seeds)
   return rows;
 }
 
@@ -383,6 +385,9 @@ P.elo.minGames = DEFAULT_PARAMS.elo.minGames;
 P.metrics = { holdout: ev };
 const inRows = replay(games, P);
 const evIn = evaluate(inRows.filter((x) => x.g.season >= FROM + 1), P, inRows);
+// every team's Elo after the last game trained on: lib/ratings.js starts NHL teams from these
+// (season in ESPN's numbering: 2027 = 2026-27)
+P.elo.seed = { asOf: new Date(games.at(-1).date).toISOString(), season: games.at(-1).season + 1, teams: Object.fromEntries([...inRows.elo.entries()].map(([id, e]) => [id, { rating: Math.round(e.rating * 10) / 10, games: e.games }])) };
 log(`\nIn-sample (seasons after the first): moneyline log loss ${evIn.moneyline.logloss} (baseline ${evIn.moneyline.baseline.logloss}) · over 6.5 Brier ${evIn.totals["6.5"].brier} (baseline ${evIn.totals["6.5"].baselineBrier})`);
 
 fs.writeFileSync(path.join(ROOT, "lib", "hockey-params.json"), JSON.stringify(P, null, 2) + "\n");

@@ -1,9 +1,9 @@
 # Hockey model training report
 
-Generated 2026-10-17T00:06:12.833Z · seasons 2021-22 → 2026-27 · hold-out 2025-26
+Generated 2026-10-18T16:33:01.826Z · seasons 2021-22 → 2026-27 · hold-out 2025-26
 
-Games: 7127 (2021-22: 1404, 2022-23: 1403, 2023-24: 1403, 2024-25: 1405, 2025-26: 1394, 2026-27: 118)
-Regulation ties: 0.223 · decided in OT 1102 · shootout 487 · home win rate 0.537
+Games: 7143 (2021-22: 1404, 2022-23: 1403, 2023-24: 1403, 2024-25: 1405, 2025-26: 1394, 2026-27: 134)
+Regulation ties: 0.223 · decided in OT 1104 · shootout 488 · home win rate 0.537
 
 ## Hold-out fit (train < 2025-26)
   Elo: K=14.77/10.34/7.38 home=29.5 otMult=0.993 gd=0.061 (log loss 0.6638)
@@ -40,20 +40,20 @@ Calibration of the home moneyline chance (hold-out):
 
 Favourites the model puts at ≥60%: 472 games, predicted 0.659, actual 0.621
 
-### Current season to date (118 games, same hold-out parameters)
+### Current season to date (134 games, same hold-out parameters)
 
-Moneyline log loss 0.6397 (baseline 0.6882, Elo only 0.6609) · accuracy 0.5763 · mean total predicted 6.092 vs actual 6.195
+Moneyline log loss 0.6363 (baseline 0.6867, Elo only 0.6484) · accuracy 0.5821 · mean total predicted 6.1 vs actual 6.172
 
 ## Production fit (all seasons)
-  Elo: K=14.79/10.35/7.39 home=26.2 otMult=1.246 gd=0.085 (log loss 0.6704)
-  goals (full): home=0.0621 kG=41.9131 kS=5.1362 tau=0.5243 playoff=-0.033 form=-0.053 elo=0.2135 rest=-0.0792/0.0643 W={"aG":0.5108,"aS":0.479,"dG":0.498,"dS":0.7685} (nll 3.8247)
-  goals (no shots): W={"aG":0.6301,"aS":0,"dG":0.7571,"dS":0} (nll 3.8344)
-  OT: q=0.6736 k=1.2618 b=0.0405 shootout k=-0.1557 b=0.0315 ({"tied":1589,"otGoal":1102,"shootout":487})
-  spread damping: 1 (ML + 60-min log loss 1.6969)
+  Elo: K=14.46/10.12/7.23 home=26.2 otMult=1.281 gd=0.104 (log loss 0.6702)
+  goals (full): home=0.0621 kG=42.2847 kS=4.7124 tau=0.5247 playoff=-0.0329 form=-0.0531 elo=0.2164 rest=-0.0803/0.0646 W={"aG":0.505,"aS":0.4765,"dG":0.4972,"dS":0.7502} (nll 3.8247)
+  goals (no shots): W={"aG":0.6238,"aS":0,"dG":0.7523,"dS":0} (nll 3.8343)
+  OT: q=0.6736 k=1.2551 b=0.0443 shootout k=-0.1431 b=0.0347 ({"tied":1592,"otGoal":1104,"shootout":488})
+  spread damping: 1 (ML + 60-min log loss 1.6967)
 
-In-sample (seasons after the first): moneyline log loss 0.6639 (baseline 0.6906) · over 6.5 Brier 0.2447 (baseline 0.2457)
+In-sample (seasons after the first): moneyline log loss 0.6638 (baseline 0.6906) · over 6.5 Brier 0.2447 (baseline 0.2457)
 
-Parameters written to lib/hockey-params.json · 35 s
+Parameters written to lib/hockey-params.json · 41 s
 
 ## How to read the parameters
 

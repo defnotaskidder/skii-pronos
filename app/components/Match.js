@@ -156,7 +156,9 @@ function LiveCardInner({ ev, best = false }) {
 // A live top pick: the locked pre-match pick and where it stands at the current score.
 function TopLive({ ev, tp, best }) {
   const { t, tm } = useT();
-  const r = settle(tp.key, ev.home.score ?? 0, ev.away.score ?? 0, { sport: ev.sport, ot: ev.ot });
+  let r = settle(tp.key, ev.home.score ?? 0, ev.away.score ?? 0, { sport: ev.sport, ot: ev.ot });
+  // a level NFL score in play isn't a refund (it goes to overtime): only a final tie voids the moneyline
+  if (r === "V" && ev.sport === "football" && ev.state !== "post") r = "L";
   const [cls, txt] = r === "W" ? ["ok", t("On track")] : r === "V" ? ["mid", t("Void for now")] : ["risk", t("At risk")];
   return (
     <div className="top-live">
