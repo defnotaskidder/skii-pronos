@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NotifyProvider, useNotify } from "./Notify";
+import { AmbienceProvider } from "./Ambience";
 import { AuthProvider } from "./Auth";
 import { LangProvider, useT } from "./Lang";
 import { useAuth } from "./Auth";
@@ -8,10 +9,26 @@ import { load, save } from "./store";
 import { product, hitChance } from "../../lib/coupon";
 import { settle } from "../../lib/model";
 
-// ---------------- board data (shared by every page) ----------------
+// ---------------- board data (loaded by the pages that need it) ----------------
+// The full board is ~75 KB compressed. It loads only once a page asks for it (matches, live…):
+// the home page reads the small /api/home instead, which keeps a phone on a slow connection fast.
 const DataCtx = createContext(null);
-export const useBoard = () => useContext(DataCtx);
+export function useBoard() {
+  const ctx = useContext(DataCtx);
+  // holds the board open while this page is mounted; the polling stops once no page needs it
+  useEffect(() => ctx?.want(), [ctx?.want]); // eslint-disable-line react-hooks/exhaustive-deps
+  return ctx;
+}
 export const useData = useBoard;
+// Read the board without asking for it (background watchers): empty until a page loads it.
+export const useBoardPassive = () => useContext(DataCtx);
+
+// How many games are live, for the nav badges: from the board while a page holds it, else from the
+// one light poll the data provider runs (/api/live?count=1&top=1, a few hundred bytes a minute).
+export function useLiveCount() {
+  const ctx = useContext(DataCtx);
+  return ctx?.wanted ? ctx.live.length : ctx?.lite?.live || 0;
+}
 
 // True when nothing a row displays has changed, so the previous object (and its rendered row) can be reused.
 const sameEvent = (a, b) => a.state === b.state && a.detail === b.detail && a.minute === b.minute && a.postponed === b.postponed
@@ -25,6 +42,30 @@ const sameEvent = (a, b) => a.state === b.state && a.detail === b.detail && a.mi
 // states stay current.
 function DataProvider({ children }) {
   const [state, setState] = useState({ events: [], skill: {}, loading: true, error: "", updated: null, liveAt: null });
+  // pages holding the board open (reference count): the full board polls only while one is mounted
+  const [holders, setHolders] = useState(0);
+  const want = useCallback(() => { setHolders((n) => n + 1); return () => setHolders((n) => Math.max(0, n - 1)); }, []);
+  const wanted = holders > 0;
+  // without the board: live count + today's top picks (id, state, score) for the badges and alerts
+  const [lite, setLite] = useState({ live: 0, top: [] });
+  useEffect(() => {
+    if (wanted) return undefined;
+    let stop = false, timer;
+    const tick = async () => {
+      if (document.visibilityState !== "hidden") {
+        try {
+          const r = await fetch("/api/live?count=1&top=1");
+          const d = await r.json();
+          if (!stop && Number.isFinite(d.live)) setLite({ live: d.live, top: Array.isArray(d.top) ? d.top : [] });
+        } catch { /* next tick */ }
+      }
+      if (!stop) timer = setTimeout(tick, 60e3);
+    };
+    tick();
+    const wake = () => { if (document.visibilityState === "visible") { clearTimeout(timer); tick(); } };
+    document.addEventListener("visibilitychange", wake);
+    return () => { stop = true; clearTimeout(timer); document.removeEventListener("visibilitychange", wake); };
+  }, [wanted]);
   const eventsRef = useRef([]);
   const refresh = useCallback(async () => {
     try {
@@ -69,6 +110,7 @@ function DataProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!wanted) return undefined;
     let stop = false, tBoard, tLive;
     const busy = () => eventsRef.current.some((e) => e.state === "in" || (e.state === "pre" && new Date(e.date) - Date.now() < 15 * 60e3 && new Date(e.date) > Date.now() - 30 * 60e3));
     const boardLoop = async () => {
@@ -84,12 +126,12 @@ function DataProvider({ children }) {
     const wake = () => { if (document.visibilityState === "visible") refreshLive(); };
     document.addEventListener("visibilitychange", wake);
     return () => { stop = true; clearTimeout(tBoard); clearTimeout(tLive); document.removeEventListener("visibilitychange", wake); };
-  }, [refresh, refreshLive]);
+  }, [refresh, refreshLive, wanted]);
 
   const value = useMemo(() => {
     const live = state.events.filter((e) => e.state === "in");
-    return { ...state, live, refresh };
-  }, [state, refresh]);
+    return { ...state, live, refresh, want, wanted, lite };
+  }, [state, refresh, want, wanted, lite]);
   return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;
 }
 
@@ -239,7 +281,9 @@ function SyncProvider({ children }) {
 // While the site is open: a toast (and browser notification) when one of the day's top picks
 // kicks off, and when it is won or lost. Games already live when the page opens don't alert.
 function TopPickWatcher() {
-  const { events } = useBoard();
+  // the board when a page holds it, else today's top picks from the light poll
+  const ctx = useBoardPassive();
+  const events = ctx.wanted ? ctx.events : ctx.lite.top;
   const { push, prefs } = useNotify();
   const { t, tm } = useT();
   const seen = useRef(null);
@@ -279,7 +323,7 @@ export default function Providers({ children }) {
       <NotifyProvider>
         <DataProvider>
           <SlipProvider>
-            <TrackProvider><SyncProvider>{children}</SyncProvider><ServiceWorker /><TopPickWatcher /></TrackProvider>
+            <TrackProvider><SyncProvider><AmbienceProvider>{children}</AmbienceProvider></SyncProvider><ServiceWorker /><TopPickWatcher /></TrackProvider>
           </SlipProvider>
         </DataProvider>
       </NotifyProvider>

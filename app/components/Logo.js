@@ -13,9 +13,9 @@ export function LogoMark({ size = 38, animate = false, className = "" }) {
     <svg className={`logo-mark ${draw ? "draw" : ""} ${className}`} width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="Skii Pronos">
       <defs>
         <linearGradient id={`bg${id}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7c3aed" />
-          <stop offset=".55" stopColor="#c026d3" />
-          <stop offset="1" stopColor="#ec4899" />
+          <stop offset="0" stopColor="#e5484d" />
+          <stop offset=".55" stopColor="#f2553f" />
+          <stop offset="1" stopColor="#ff7043" />
         </linearGradient>
         <radialGradient id={`hl${id}`} cx=".22" cy=".12" r=".85">
           <stop offset="0" stopColor="#fff" stopOpacity=".38" />

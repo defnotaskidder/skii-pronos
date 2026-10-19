@@ -61,7 +61,7 @@ export default async function Image({ params }) {
   const team = (tm, uri) => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 360 }}>
       {uri ? <img src={uri} width={150} height={150} style={{ objectFit: "contain" }} /> : (
-        <div style={{ width: 150, height: 150, borderRadius: 999, background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44, color: "#9097b3" }}>{(tm.abbr || tm.short || "?").slice(0, 3)}</div>
+        <div style={{ width: 150, height: 150, borderRadius: 999, background: "rgba(255,255,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44, color: "#a1a1aa" }}>{(tm.abbr || tm.short || "?").slice(0, 3)}</div>
       )}
       <div style={{ display: "flex", fontSize: 34, marginTop: 14 }}>{tm.short}</div>
     </div>
@@ -72,18 +72,18 @@ export default async function Image({ params }) {
   try {
   const img = new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#07091a", color: "#f3f4fb", fontFamily: font, fontWeight: 700 }}>
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#0d0d0f", color: "#f4f4f5", fontFamily: font, fontWeight: 700 }}>
         <div style={{ display: "flex", alignItems: "center", padding: "44px 64px 0" }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg, #7c3aed, #ec4899)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 32, marginRight: 18 }}>S</div>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg, #e5484d, #ff7043)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 32, marginRight: 18 }}>S</div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", fontSize: 30 }}>Skii Pronos</div>
-            <div style={{ display: "flex", fontSize: 20, color: "#9097b3" }}>{L ? `${L.name} · ${when}` : "Pronos & cotes"}</div>
+            <div style={{ display: "flex", fontSize: 20, color: "#a1a1aa" }}>{L ? `${L.name} · ${when}` : "Pronos & cotes"}</div>
           </div>
         </div>
         {ev ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "36px 64px 0", flexGrow: 1 }}>
             {team(ev.home, home)}
-            <div style={{ display: "flex", fontSize: ev.state !== "pre" ? 84 : 56, color: ev.state !== "pre" ? "#ffffff" : "#5f6584" }}>{score}</div>
+            <div style={{ display: "flex", fontSize: ev.state !== "pre" ? 84 : 56, color: ev.state !== "pre" ? "#ffffff" : "#8b8b94" }}>{score}</div>
             {team(ev.away, away)}
           </div>
         ) : (
@@ -92,13 +92,13 @@ export default async function Image({ params }) {
         <div style={{ display: "flex", alignItems: "center", margin: "0 64px 44px", padding: "18px 24px", borderRadius: 22, background: "rgba(124,58,237,.18)", border: "2px solid rgba(168,85,247,.5)" }}>
           {pick ? (
             <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-              <div style={{ display: "flex", fontSize: 16, letterSpacing: 3, color: "#c4b5fd", marginRight: 18 }}>PRONO</div>
+              <div style={{ display: "flex", fontSize: 16, letterSpacing: 3, color: "#ffb4b0", marginRight: 18 }}>PRONO</div>
               <div style={{ display: "flex", fontSize: 30, flexGrow: 1 }}>{marketLabel("fr", pick.label)}</div>
-              <div style={{ display: "flex", fontSize: 30, color: "#f472b6", marginRight: 16 }}>{`${pick.estimated ? "≈ " : "@ "}${Number(pick.odds).toFixed(2)}`}</div>
-              <div style={{ display: "flex", fontSize: 22, color: "#9097b3" }}>{`${Math.round((pick.safe ?? pick.p) * 100)}%`}</div>
+              <div style={{ display: "flex", fontSize: 30, color: "#ff8a65", marginRight: 16 }}>{`${pick.estimated ? "≈ " : "@ "}${Number(pick.odds).toFixed(2)}`}</div>
+              <div style={{ display: "flex", fontSize: 22, color: "#a1a1aa" }}>{`${Math.round((pick.safe ?? pick.p) * 100)}%`}</div>
             </div>
           ) : (
-            <div style={{ display: "flex", fontSize: 24, color: "#c4b5fd" }}>Pronostic, probabilités, cotes et analyse IA</div>
+            <div style={{ display: "flex", fontSize: 24, color: "#ffb4b0" }}>Pronostic, probabilités, cotes et analyse IA</div>
           )}
         </div>
       </div>

@@ -69,8 +69,8 @@ export function Ring({ value = 0, size = 52, stroke = 5, label, fontSize }) {
         <defs>
           <linearGradient id={`g${id}`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#22d3ee" />
-            <stop offset="55%" stopColor="#8b5cf6" />
-            <stop offset="100%" stopColor="#ec4899" />
+            <stop offset="55%" stopColor="#ff5f5f" />
+            <stop offset="100%" stopColor="#ff7043" />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,.08)" strokeWidth={stroke} fill="none" />

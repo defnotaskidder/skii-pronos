@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { analysedBoard } from "../../../lib/board";
 import { buildCoupon, buildTarget } from "../../../lib/coupon";
-import { couponsOfTheDay, learning, poolOf, withStatus } from "../../../lib/daily";
-import { dbEnabled } from "../../../lib/db";
+import { allWithStatus, couponsOfTheDay, learning, poolOf } from "../../../lib/daily";
 
 export const maxDuration = 90; // the first build of the day waits for the AI review (web search, ≤ 55 s)
 
@@ -25,7 +24,7 @@ export async function GET(request) {
       return NextResponse.json({ coupon: c, pool: pool.length });
     }
     const d = await couponsOfTheDay(rows);
-    return NextResponse.json({ ...d, safe: withStatus(d.safe, rows), grosse: withStatus(d.grosse, rows), db: dbEnabled() });
+    return NextResponse.json(allWithStatus(d, rows));
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 502 });
   }

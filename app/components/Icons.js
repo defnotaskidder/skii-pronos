@@ -33,6 +33,12 @@ const P = {
   send: "m22 2-7 20-4-9-9-4Zm0 0L11 13",
   filter: "M3 5h18l-7 8v6l-4 2v-8Z",
   card: "M4 9h16M8 15h3M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z",
+  music: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
+  menu: "M4 6h16M4 12h16M4 18h16",
+  snow: "M12 2v20M4.9 7l14.2 10M19.1 7 4.9 17M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5",
+  crown: "M3 19h18M4 8l4 4 4-7 4 7 4-4-2 10H6Z",
+  gift: "M4 11h16v10H4zM3 7h18v4H3zM12 7v14M12 7S10.5 3 8 3a2 2 0 0 0 0 4h4Zm0 0s1.5-4 4-4a2 2 0 0 1 0 4h-4Z",
+  chat: "M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 21l2-5.6A8.5 8.5 0 1 1 21 11.5Z",
 };
 
 export default function Icon({ name, className = "ico", size, fill = false, style }) {

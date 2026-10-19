@@ -13,7 +13,7 @@ export const metadata = {
   icons: { icon: "/icon.svg" },
 };
 
-export const viewport = { themeColor: "#05060c", width: "device-width", initialScale: 1 };
+export const viewport = { themeColor: "#0d0d0f", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }) {
   return (

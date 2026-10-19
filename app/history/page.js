@@ -254,7 +254,7 @@ function MyCoupons() {
       </div>
 
       {list.length === 0 ? (
-        <div className="empty"><Icon name="history" />{t("Nothing here yet.")}<br /><small>{t("Track the")} <Link href="/coupon" style={{ color: "#c4b5fd" }}>{t("Coupon du jour").toLowerCase()}</Link>, {t("a")} <Link href="/grosse-cote" style={{ color: "#c4b5fd" }}>{t("Grosse cote").toLowerCase()}</Link> {t("or your own coupon and it lands here, graded automatically.")}</small></div>
+        <div className="empty"><Icon name="history" />{t("Nothing here yet.")}<br /><small>{t("Track the")} <Link href="/coupon" style={{ color: "#ffb4b0" }}>{t("Coupon du jour").toLowerCase()}</Link>, {t("a")} <Link href="/grosse-cote" style={{ color: "#ffb4b0" }}>{t("Grosse cote").toLowerCase()}</Link> {t("or your own coupon and it lands here, graded automatically.")}</small></div>
       ) : list.map((e) => {
         const st = status(e.legs);
         const isOpen = open === e.id;

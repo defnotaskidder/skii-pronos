@@ -46,6 +46,14 @@ The closing line is the consensus of real sportsbooks (prediction sites, aggrega
 
 Team ratings are stored per league for every sport except soccer (`nhl:1`, `nfl:1`): ESPN reuses team ids across sports, so before this the NHL's Bruins and the NFL's Falcons shared one rating. NHL and NFL teams start from the Elo their trainers ended on (`elo.seed` in the params files); games after the seed's date are applied on top (tracked in `skii_rated` as `k2:<event id>` outside soccer, so games the old code rated under shared ids are rated again under the new keys).
 
+## Daily coupons, express builds, live grosse cote
+
+- **Coupon du jour** — the combination of at least two real-priced legs (every sport) with the highest chance of landing at ~2.00 (`lib/coupon.js` buildTarget, `lib/daily.js`). It always publishes: the next 30 h, softer legs, then estimated prices are tried in turn. No coupon is certain; it's the best chance the prices allow.
+- **Express builds, same day** — x12.5, x100 (the grosse cote du jour), x200 and x300/400, each the highest-chance combination of the day's priced legs; stored and graded like the coupon du jour (`skii_daily` kinds `x12`, `grosse`, `x200`, `x400`).
+- **Live grosse cote** — `/api/live-coupon?target=20`, built from the games in play with the live models; prices are estimates (no free live odds feed).
+
+The phone layout follows the sketch: four tabs (Accueil, Pronos, Stats, VIP), a header menu with every other page, snow (switchable) and the Juice WRLD music player (Spotify's official embed, switchable — songs can't be hosted). The home page reads only `/api/home`; the full board loads on the pages that need it.
+
 ## Alerts, bots and the daily posts
 
 - **In the browser**: toasts + optional pop-ups while the site is open; **push** alerts with the site closed (Settings → Alerts).

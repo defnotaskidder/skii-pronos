@@ -7,6 +7,7 @@ import MessagingLinks from "../components/Messaging";
 import InstallCard from "../components/Install";
 import { useAuth } from "../components/Auth";
 import { useT, LangSwitch } from "../components/Lang";
+import { MusicSwitch, SnowSwitch } from "../components/Ambience";
 import { LANGS } from "../../lib/i18n";
 
 export default function Settings() {
@@ -46,6 +47,11 @@ export default function Settings() {
             ))}
           </div>
           <div style={{ marginTop: 14 }}><LangSwitch /></div>
+        </section>
+        <section className="card">
+          <div className="card-head"><span className="stat-ico" style={{ margin: 0 }}><Icon name="sparkles" /></span><h3>{t("Ambience")}</h3></div>
+          <div className="stack" style={{ gap: 14 }}><SnowSwitch /><MusicSwitch /></div>
+          <p className="note" style={{ marginBottom: 0 }}>{t("The music is Spotify's official Juice WRLD player: press play in it. Full songs for Spotify listeners, 30-second previews otherwise.")}</p>
         </section>
 
         <NotificationSettings />

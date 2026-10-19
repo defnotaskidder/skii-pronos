@@ -1,139 +1,221 @@
 "use client";
+// Home (the sketch): record tiles, the day's top picks by tab, the coupon du jour and the express
+// builds, yesterday's results, the channel and bonus cards. Reads only /api/home (a few KB) so it
+// opens fast on a phone; the full board loads on the pages that need it.
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import Icon from "./components/Icons";
 import { Top } from "./components/Shell";
-import { useBoard, useTrack } from "./components/Providers";
 import { useT } from "./components/Lang";
-import { CouponActions, CouponCard, chanceText, useCouponOfTheDay } from "./components/Coupon";
-import { LiveCard, MatchRow, PickItem } from "./components/Match";
-import { Skeleton, pct } from "./components/ui";
-import { CountUp } from "./components/Motion";
-import { LEAGUE_BY_ID } from "../lib/leagues";
+import { useSlip } from "./components/Providers";
+import { toLeg } from "./components/Match";
+import { chanceText } from "./components/Coupon";
+import { Skeleton, TeamLogo, localTime, odds2 } from "./components/ui";
+import { leagueName } from "../lib/leagues";
 
-const TIER_RANK = { High: 4, "Med-High": 3, Medium: 2, Low: 1, Skip: 0 };
+const CHANNEL = process.env.NEXT_PUBLIC_WHATSAPP_CHANNEL || "";
+const BONUS_CODE = process.env.NEXT_PUBLIC_BONUS_CODE || "";
+const BONUS_URL = process.env.NEXT_PUBLIC_BONUS_URL || "";
+const BUILDS = [
+  { kind: "x12", title: "Medium", target: "x 12.5" },
+  { kind: "grosse", title: "High odds", target: "x 100" },
+  { kind: "x200", title: "High odds", target: "x 200" },
+  { kind: "x400", title: "High odds", target: "x 300 / 400" },
+];
+const TABS = [["today", "Today"], ["tomorrow", "Tomorrow"], ["weekend", "Weekend"], ["live", "Live"]];
 
-export default function Dashboard() {
-  const { events, live, loading, error } = useBoard();
-  const { data: coupon, error: couponError } = useCouponOfTheDay();
-  const { entries } = useTrack();
-  const { t, lang, locale } = useT();
+function useHome() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let alive = true, timer;
+    const get = async () => {
+      if (document.visibilityState === "hidden") { timer = setTimeout(get, 30e3); return; }
+      try {
+        const r = await fetch("/api/home");
+        const d = await r.json();
+        if (!alive) return;
+        if (d.error) setError(d.error); else { setData(d); setError(""); }
+        timer = setTimeout(get, d.live ? 30e3 : 90e3);
+      } catch {
+        if (alive) { setError("offline"); timer = setTimeout(get, 30e3); }
+      }
+    };
+    get();
+    return () => { alive = false; clearTimeout(timer); };
+  }, []);
+  return { data, error };
+}
 
-  const now = Date.now();
-  const next24 = useMemo(() => events.filter((e) => e.state === "pre" && new Date(e.date) - now < 24 * 3600e3 && new Date(e.date) > now), [events]); // eslint-disable-line react-hooks/exhaustive-deps
-  const topPicks = useMemo(() => next24.filter((e) => e.a?.pick && TIER_RANK[e.a.pick.tier] >= 3)
-    .sort((a, b) => (TIER_RANK[b.a.pick.tier] - TIER_RANK[a.a.pick.tier]) || (b.a.pick.safe - a.a.pick.safe)).slice(0, 6), [next24]);
-  const values = useMemo(() => events.filter((e) => e.state === "pre" && e.a?.value).sort((a, b) => b.a.value.ev - a.a.value.ev).slice(0, 6), [events]);
-  const bigGames = useMemo(() => next24.filter((e) => LEAGUE_BY_ID[e.league]?.tier === 1).slice(0, 6), [next24]);
-  const leaguesToday = new Set(next24.map((e) => e.league)).size;
-
-  const record = useMemo(() => {
-    const week = Date.now() - 7 * 86400e3;
-    const legs = entries.filter((e) => new Date(e.at) > week).flatMap((e) => e.legs).filter((l) => l.result === "W" || l.result === "L");
-    const w = legs.filter((l) => l.result === "W").length;
-    return { n: legs.length, w, rate: legs.length ? w / legs.length : 0 };
-  }, [entries]);
-
-  const today = new Date().toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
+export default function Home() {
+  const { data, error } = useHome();
+  const { t, lang } = useT();
+  const [tab, setTab] = useState("today");
+  const [weekend, setWeekend] = useState(null);
+  useEffect(() => {
+    if (tab !== "weekend" || weekend) return;
+    fetch("/api/home?tab=weekend").then((r) => r.json()).then((d) => setWeekend(d.weekend || [])).catch(() => setWeekend([]));
+  }, [tab, weekend]);
+  const picks = tab === "weekend" ? weekend : data?.picks?.[tab];
 
   return (
-    <>
-      <Top title={t("Dashboard")} sub={`${today} · ${t("{n} matches in the next 24h across {m} leagues", { n: next24.length, m: leaguesToday })}`} />
-      {error && <div className="error" style={{ marginBottom: 16 }}>{error === "offline" ? t("Couldn't reach the server — retrying.") : error}</div>}
+    <div className="home">
+      <Top brand />
+      <p className="tagline">{t("Every pick posted before kickoff. Every result public.")}</p>
+      {error && <div className="error" style={{ marginBottom: 12 }}>{error === "offline" ? t("Couldn't reach the server — retrying.") : error}</div>}
 
-      <div className="grid g-dash">
-        <div className="stack">
-          {coupon ? (
-            <CouponCard coupon={coupon.safe} title={t("Coupon du jour")} eyebrow={t("Safest legs today") + (coupon.reviewed ? t(" · AI-checked") : "")}
-              footer={<CouponActions coupon={coupon.safe} title={t("Coupon du jour")} />} />
-          ) : (
-            <section className="card hero glow">
-              <div className="eyebrow">{t("Coupon du jour")}</div>
-              {couponError ? <div className="error" style={{ marginTop: 12 }}>{couponError}</div> : <div style={{ marginTop: 14 }}><Skeleton rows={3} h={58} /></div>}
-            </section>
-          )}
+      <Stats s={data?.stats} loading={!data} />
 
-          {live.length > 0 && (
-            <section>
-              <div className="card-head" style={{ padding: "0 4px" }}>
-                <span className="pill live">{t("LIVE")}</span><h2>{t("Live now")}</h2>
-                <Link href="/live" className="link">{t("All {n}", { n: live.length })} <Icon name="chevron" size={14} /></Link>
-              </div>
-              <div className="hscroll stagger">{live.slice(0, 12).map((e) => <LiveCard key={e.id} ev={e} />)}</div>
-            </section>
-          )}
-        </div>
-
-        <div className="stack">
-          <div className="grid g-2 stagger" style={{ gap: 14 }}>
-            <Link href="/live" className="card tight stat">
-              <span className="stat-ico live"><Icon name="live" /></span>
-              <span className="big num"><CountUp value={live.length} /></span><span className="lbl">{t("Live now")}</span>
-            </Link>
-            <Link href="/matches" className="card tight stat">
-              <span className="stat-ico cyan"><Icon name="ball" /></span>
-              <span className="big num"><CountUp value={next24.length} /></span><span className="lbl">{t("Next 24 hours")}</span>
-            </Link>
-            <div className="card tight stat">
-              <span className="stat-ico green"><Icon name="shield" /></span>
-              <span className="big num"><CountUp value={next24.filter((e) => TIER_RANK[e.a?.pick?.tier] >= 3).length} /></span><span className="lbl">{t("Strong picks")}</span>
-            </div>
-            <div className="card tight stat">
-              <span className="stat-ico"><Icon name="trend" /></span>
-              <span className="big num"><CountUp value={values.length} /></span><span className="lbl">{t("Value spots")}</span>
-            </div>
-          </div>
-
-          <section className="card">
-            <div className="card-head">
-              <h3>{t("Your record")}<br /><span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>{t("Last 7 days")}</span></h3>
-              <span className="link" style={{ fontSize: 20, fontWeight: 800, color: "var(--text)" }}>{record.n ? pct(record.rate) : "—"}</span>
-            </div>
-            <div className="bar"><i style={{ width: `${record.rate * 100}%` }} /></div>
-            <div className="row" style={{ marginTop: 14, justifyContent: "space-between" }}>
-              <span className="muted" style={{ fontSize: 13 }}>{record.n ? t("{w} won of {n} graded legs", { w: record.w, n: record.n }) : t("Track a coupon to start your record.")}</span>
-              <Link href="/history" className="btn soft sm">{t("History")}</Link>
-            </div>
-          </section>
-
-          <Link href="/grosse-cote" className="card" style={{ display: "block" }}>
-            <div className="row" style={{ flexWrap: "nowrap" }}>
-              <span className="stat-ico" style={{ margin: 0 }}><Icon name="bolt" /></span>
-              <div style={{ minWidth: 0 }}>
-                <b style={{ fontSize: 15 }}>{t("Grosse cote du jour")}</b>
-                <div className="muted" style={{ fontSize: 12.5 }}>
-                  {coupon?.grosse?.legs?.length ? t("{n} legs · {chance}", { n: coupon.grosse.legs.length, chance: chanceText(coupon.grosse.chance, lang) }) : t("Big odds, best chance · generator inside")}
-                </div>
-              </div>
-              <span className="spacer" />
-              {coupon?.grosse?.legs?.length > 0 && <span className="total-odds num grad-text" style={{ fontSize: 30 }}><CountUp value={coupon.grosse.odds} decimals={2} /></span>}
-            </div>
-          </Link>
-        </div>
+      <div className="tabs-row" role="tablist">
+        {TABS.map(([k, label]) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={`chip ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>
+            {t(label)}{k === "live" && data?.live > 0 && <span className="n">{data.live}</span>}
+          </button>
+        ))}
       </div>
 
-      <div className="grid g-2" style={{ marginTop: 18 }} data-reveal>
-        <section className="card">
-          <div className="card-head"><h2>{t("Top picks today")}</h2><Link href="/matches" className="link">{t("All matches")} <Icon name="chevron" size={14} /></Link></div>
-          {loading ? <Skeleton rows={4} h={58} /> : topPicks.length ? (
-            <div className="plist stagger">{topPicks.map((e) => <PickItem key={e.id} ev={e} m={e.a.pick} />)}</div>
-          ) : <div className="empty">{t("No high-confidence picks in the next 24 hours.")}</div>}
-        </section>
-        <section className="card">
-          <div className="card-head"><h2>{t("Value spots")}</h2><span className="pill violet" style={{ marginLeft: "auto" }}>{t("model beats the price")}</span></div>
-          {loading ? <Skeleton rows={4} h={58} /> : values.length ? (
-            <div className="plist stagger">{values.map((e) => <PickItem key={e.id} ev={e} m={e.a.value} right={<span className="pill green">+{Math.round(e.a.value.ev * 100)}%</span>} />)}</div>
-          ) : <div className="empty">{t("No price beats the model right now. That's normal, value is rare.")}</div>}
-        </section>
-      </div>
-
-      {bigGames.length > 0 && (
-        <section style={{ marginTop: 22 }} data-reveal>
-          <div className="card-head" style={{ padding: "0 4px" }}><h2>{t("Big games")}</h2><Link href="/matches" className="link">{t("See all")} <Icon name="chevron" size={14} /></Link></div>
-          {bigGames.map((e) => <MatchRow key={e.id} ev={e} showLeague />)}
-        </section>
+      <div className="sec-label">{t("TOP PICKS")} · {t("local times")}</div>
+      {!picks ? <Skeleton rows={3} h={92} /> : picks.length ? (
+        <div className="pick-cards">{picks.map((p) => <PickCard key={p.id} p={p} />)}</div>
+      ) : (
+        <div className="empty">{tab === "live" ? t("No top pick is playing right now.") : t("No strong priced pick for this day yet — prices usually appear 1–2 days before kick-off.")}</div>
       )}
-      <p className="note" style={{ marginTop: 24 }}>{t("Probabilities come from bookmaker odds with the margin removed, blended with a league-table and form model. “≈” prices are estimates: take them on 1xBet only at or above the shown odds. 18+, bet responsibly.")}</p>
+      <Link href="/matches" className="see-all">{t("See all picks")} <Icon name="chevron" size={15} /></Link>
+
+      <div className="sec-label">{t("COUPON DU JOUR")}</div>
+      <CouponDuJour c={data?.coupons} />
+
+      <div className="sec-label">{t("EXPRESS BUILDS")} · {t("same day")}</div>
+      <div className="builds">
+        {BUILDS.map((b) => {
+          const c = data?.coupons?.[b.kind];
+          return (
+            <Link key={b.kind} href={`/vip#${b.kind}`} className="build">
+              <span className="b-title">
+                <span className="ell">{t(b.title)}</span>{b.kind === "x200" || b.kind === "x400" ? <Icon name="crown" size={13} /> : null}
+                {c?.status && c.status !== "open" && <span className={`b-state ${c.status}`}>{c.status === "won" ? t("pick.won") : t("pick.lost")}</span>}
+              </span>
+              <b className="b-odds num">{c?.n ? `x ${odds2(c.odds)}` : b.target}</b>
+              <span className="b-sub">{!data ? "…" : c?.n ? `${t("{n} selections", { n: c.n })} · ${chanceText(c.chance, lang)}` : data.coupons?.building ? t("Being built…") : c?.empty ? t("Today's games are over — next builds tomorrow morning") : t("Not published yet today.")}</span>
+            </Link>
+          );
+        })}
+      </div>
+      <Link href="/vip#live" className="live-gc">
+        <span className="pill live">{t("LIVE")}</span>
+        <span style={{ minWidth: 0 }}><b>{t("Live grosse cote")}</b><small>{!data ? "…" : data.live ? t("Built from the {n} games in play", { n: data.live }) : t("Opens when games are in play")}</small></span>
+        <Icon name="chevron" />
+      </Link>
+
+      <Yesterday y={data?.yesterday} />
+
+      {CHANNEL ? (
+        <a className="cta" href={CHANNEL} target="_blank" rel="noopener noreferrer">
+          <b>{t("Join the free WhatsApp channel")}</b><span>{t("Picks and coupons before kickoff")}</span><span className="cta-btn">{t("Join now")}</span>
+        </a>
+      ) : (
+        <Link className="cta" href="/notifications">
+          <b>{t("Get the picks before kickoff")}</b><span>{t("Alerts for the coupon du jour, the top picks and your matches")}</span><span className="cta-btn">{t("Turn on alerts")}</span>
+        </Link>
+      )}
+      {BONUS_CODE && (
+        <a className="bonus" href={BONUS_URL || undefined} target="_blank" rel="noopener noreferrer sponsored">
+          <Icon name="gift" size={18} /><span><b>{t("Bonus code")}</b> · {t("1xBet promo and sign-up link")}</span><code>{BONUS_CODE}</code>
+        </a>
+      )}
+      <p className="note center">{t("18+ only. No pick is guaranteed. Bet responsibly.")}</p>
+    </div>
+  );
+}
+
+function Stats({ s, loading }) {
+  const { t } = useT();
+  if (loading) return <div className="stat-grid"><Skeleton rows={1} h={74} /><Skeleton rows={1} h={74} /><Skeleton rows={1} h={74} /><Skeleton rows={1} h={74} /></div>;
+  if (!s) return null;
+  const sign = (x) => (x > 0 ? "+" : "");
+  return (
+    <div className="stat-grid">
+      <div className="stat-tile"><span>{t("Win rate ({d} days)", { d: s.days })}</span><b className="num">{Math.round(s.rate * 100)}%</b><small>{t("{w} of {n} top picks", { w: s.w, n: s.n })}</small></div>
+      <div className="stat-tile"><span>ROI</span><b className={`num ${s.roi >= 0 ? "pos" : "neg"}`}>{sign(s.roi)}{(s.roi * 100).toFixed(1)}%</b><small>{t("flat stakes at the listed odds")}</small></div>
+      <div className="stat-tile"><span>{t("Profit")}</span><b className={`num ${s.units >= 0 ? "pos" : "neg"}`}>{sign(s.units)}{s.units.toFixed(1)} {t("units")}</b><small>{t("1 unit per pick")}</small></div>
+      <div className="stat-tile"><span>{t("Last 10")}</span>
+        <span className="dots">{s.last10.map((r, i) => <i key={i} className={`r-${r}`} title={r === "W" ? t("pick.won") : r === "L" ? t("pick.lost") : t("pick.void")} />)}</span>
+      </div>
+    </div>
+  );
+}
+
+function statusOf(p, t) {
+  if (p.state === "in") return ["live", p.detail || t("LIVE")];
+  if (p.state === "post") return p.result === "W" ? ["won", t("pick.won")] : p.result === "L" ? ["lost", t("pick.lost")] : p.result === "V" ? ["void", t("pick.void")] : ["done", t("Final")];
+  return ["up", t("Upcoming")];
+}
+
+function PickCard({ p }) {
+  const { t, tm, lang } = useT();
+  const slip = useSlip();
+  const [cls, label] = statusOf(p, t);
+  const on = slip.has(p.id, p.key);
+  const ev = { id: p.id, league: p.league, sport: p.sport, date: p.date, home: p.home, away: p.away };
+  return (
+    <div className={`pick-card ${p.rank ? "is-top" : ""}`}>
+      <Link href={`/match/${p.league}/${p.id}`} className="pc-main">
+        <div className="pc-head">
+          <span className="ell">{leagueName({ name: p.leagueName, fr: p.leagueFr }, lang)} · {localTime(p.date)}</span>
+          <span className={`pc-state ${cls}`}>{label}</span>
+        </div>
+        <div className="pc-teams">
+          <TeamLogo team={p.home} size={20} /><b className="ell">{p.home.short}</b>
+          {p.state !== "pre" ? <b className="num pc-score">{p.home.score ?? 0} – {p.away.score ?? 0}</b> : <span className="dim">vs</span>}
+          <b className="ell">{p.away.short}</b><TeamLogo team={p.away} size={20} />
+        </div>
+        <div className="pc-pick">{tm(p.label)}</div>
+        {Number.isFinite(p.p) && <div className="pc-model">{t("Model {m}% vs odds {o}%", { m: Math.round(p.p * 100), o: Math.round(p.implied * 100) })}</div>}
+      </Link>
+      <div className="pc-side">
+        <b className="num">{p.estimated ? "≈" : "@ "}{odds2(p.odds)}</b>
+        <small>{p.units === 1 ? t("1 unit") : t("{n} units", { n: p.units })}</small>
+        {p.state === "pre" && (
+          <button className={`icon-btn ${on ? "on" : ""}`} aria-label={t("Add to coupon")} onClick={() => slip.toggle(toLeg(ev, { key: p.key, label: p.label, odds: p.odds, p: p.p, safe: p.p, estimated: p.estimated }))}>
+            <Icon name={on ? "check" : "plus"} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CouponDuJour({ c }) {
+  const { t, lang } = useT();
+  const s = c?.safe?.n ? c.safe : null;
+  return (
+    <Link href="/coupon" className="cdj">
+      <span className="stat-ico" style={{ margin: 0 }}><Icon name="ticket" /></span>
+      <span style={{ minWidth: 0 }}>
+        <b>{t("Coupon du jour")}</b>
+        <small>{s ? `${t("{n} selections", { n: s.n })} · ${t("hit chance")} ${chanceText(s.chance, lang)}` : c?.building ? t("Being built…") : t("Safest legs of the day, real prices")}</small>
+      </span>
+      <span className="spacer" />
+      {s && <b className="cdj-odds num">{odds2(s.odds)}</b>}
+      {s?.status && s.status !== "open" && <span className={`b-state ${s.status}`}>{s.status === "won" ? t("pick.won") : t("pick.lost")}</span>}
+    </Link>
+  );
+}
+
+function Yesterday({ y }) {
+  const { t, tm } = useT();
+  const rows = y?.picks || [];
+  const coupons = Object.entries(y?.coupons || {}).filter(([, c]) => c.result);
+  if (!rows.length && !coupons.length) return null;
+  const NAME = { safe: "Coupon du jour", x12: "Express x12.5", grosse: "Express x100", x200: "Express x200", x400: "Express x300/400" };
+  const res = (r) => (r === "W" ? <span className="res won">{t("pick.won")}</span> : r === "L" ? <span className="res lost">{t("pick.lost")}</span> : <span className="res void">{t("pick.void")}</span>);
+  return (
+    <>
+      <div className="sec-label">{t("YESTERDAY'S RESULTS")}</div>
+      <div className="yest">
+        {coupons.map(([k, c]) => <div key={k} className="y-row"><span className="ell"><b>{t(NAME[k] || k)}</b> · @ {odds2(c.odds)}</span>{res(c.result)}</div>)}
+        {rows.map((r) => <Link key={r.id} href={`/match/${r.league}/${r.id}`} className="y-row"><span className="ell">{r.home} – {r.away} · {tm(r.label)} <span className="dim">{r.score}</span></span>{res(r.result)}</Link>)}
+      </div>
     </>
   );
 }

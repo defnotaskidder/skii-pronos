@@ -41,8 +41,8 @@ export default function CouponPage() {
       <div className="grid g-match">
         <div className="stack">
           {data ? (
-            <CouponCard coupon={data.safe} title={t("Coupon du jour")} eyebrow={t("Safe · ~2.5 odds")}
-              sub={data.reviewed ? t("The day's safest picks · football only · real bookmaker prices · checked by AI") : t("The day's safest picks · football only · real bookmaker prices")}
+            <CouponCard coupon={data.safe} title={t("Coupon du jour")} eyebrow={t("Safest · ~2.00 odds")}
+              sub={data.reviewed ? t("The combination with the best chance of landing · every sport · real bookmaker prices · checked by AI") : t("The combination with the best chance of landing · every sport · real bookmaker prices")}
               footer={<CouponActions coupon={data.safe} title={t("Coupon du jour")} />} />
           ) : <section className="card hero glow"><Skeleton rows={4} h={60} /></section>}
           {data?.dropped?.length > 0 && (
@@ -52,7 +52,7 @@ export default function CouponPage() {
             </section>
           )}
           {data?.grosse && (
-            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("~30 odds · {chance}", { chance: chanceText(data.grosse.chance, lang) })} sub={t("Football only · real bookmaker prices")} glow={false} compact icon="bolt"
+            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("x100 · {chance}", { chance: chanceText(data.grosse.chance, lang) })} sub={t("Same day · every sport · real bookmaker prices")} glow={false} compact icon="bolt"
               footer={<CouponActions coupon={data.grosse} title={t("Grosse cote du jour")} extra={<Link href="/grosse-cote" className="btn soft"><Icon name="bolt" />{t("Grosse cote generator")}</Link>} />} />
           )}
         </div>
@@ -78,7 +78,7 @@ export default function CouponPage() {
             </div>
             <button className="btn primary block" disabled={busy} onClick={build}><Icon name="bolt" />{busy ? t("Building…") : t("Build ~{t} odds", { t: target })}</button>
             {err && <div className="error" style={{ marginTop: 12 }}>{err}</div>}
-            <p className="note" style={{ marginBottom: 0 }}>{t("One market per match, built for the highest chance at your target. Want 10, 50, 1000? Use the")} <Link href="/grosse-cote" style={{ color: "#c4b5fd" }}>{t("grosse cote generator")}</Link>.</p>
+            <p className="note" style={{ marginBottom: 0 }}>{t("One market per match, built for the highest chance at your target. Want 10, 50, 1000? Use the")} <Link href="/grosse-cote" style={{ color: "#ffb4b0" }}>{t("grosse cote generator")}</Link>.</p>
           </section>
           {custom && (
             <CouponCard coupon={custom} title={t("Custom ~{t}", { t: target })} eyebrow={t("{profile} · {n} legs", { profile: t(MODES.find((m) => m[0] === mode)[1]), n: custom.legs.length }) + (custom.reached ? "" : t(" · target not reached"))} glow={false} compact

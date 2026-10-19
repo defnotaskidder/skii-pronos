@@ -340,16 +340,16 @@ function ProfitChart({ curve, locale }) {
   return (
     <div style={{ position: "relative" }}>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }} onMouseMove={onMove} onMouseLeave={() => setHover(null)} onTouchMove={(e) => onMove(e.touches[0] ? { currentTarget: e.currentTarget, clientX: e.touches[0].clientX } : e)} role="img" aria-label="Cumulative profit">
-        <defs><linearGradient id="pf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#a855f7" stopOpacity=".35" /><stop offset="1" stopColor="#a855f7" stopOpacity="0" /></linearGradient></defs>
+        <defs><linearGradient id="pf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff6b6b" stopOpacity=".35" /><stop offset="1" stopColor="#ff6b6b" stopOpacity="0" /></linearGradient></defs>
         {ticks.map((y, i) => <line key={i} x1={P.l} x2={W - P.r} y1={y} y2={y} stroke="rgba(255,255,255,.06)" />)}
-        {ticks.map((y, i) => <text key={i} x={P.l - 8} y={y + 4} textAnchor="end" fontSize="11" fill="#9097b3">{(maxY - (i / 4) * (maxY - minY)).toFixed(0)}u</text>)}
+        {ticks.map((y, i) => <text key={i} x={P.l - 8} y={y + 4} textAnchor="end" fontSize="11" fill="#a1a1aa">{(maxY - (i / 4) * (maxY - minY)).toFixed(0)}u</text>)}
         <line x1={P.l} x2={W - P.r} y1={pts[0].y0} y2={pts[0].y0} stroke="rgba(255,255,255,.18)" strokeDasharray="3 4" />
         <path d={area} fill="url(#pf)" />
-        <path d={line} fill="none" stroke="#a855f7" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-        {[pts[0], pts[pts.length - 1]].map((p, i) => <text key={i} x={p.x} y={H - 8} textAnchor={i ? "end" : "start"} fontSize="11" fill="#9097b3">{new Date(p.day + "T12:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "short" })}</text>)}
+        <path d={line} fill="none" stroke="#ff6b6b" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        {[pts[0], pts[pts.length - 1]].map((p, i) => <text key={i} x={p.x} y={H - 8} textAnchor={i ? "end" : "start"} fontSize="11" fill="#a1a1aa">{new Date(p.day + "T12:00:00Z").toLocaleDateString(locale, { day: "numeric", month: "short" })}</text>)}
         {h && (<>
           <line x1={h.x} x2={h.x} y1={P.t} y2={H - P.b} stroke="rgba(255,255,255,.25)" />
-          <circle cx={h.x} cy={h.y} r="5" fill="#a855f7" stroke="#12152a" strokeWidth="2" />
+          <circle cx={h.x} cy={h.y} r="5" fill="#ff6b6b" stroke="#1c1c20" strokeWidth="2" />
         </>)}
       </svg>
       {h && (

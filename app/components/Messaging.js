@@ -72,7 +72,7 @@ export default function MessagingLinks() {
         );
       })}
       {info && !auth.user && (info.telegram?.enabled || info.whatsapp?.enabled) && <p className="note" style={{ marginBottom: 0 }}>{t("Sign in first to link a messaging app.")}</p>}
-      {info?.telegram?.enabled && info.telegram.bot && <p className="note" style={{ marginBottom: 0 }}>Telegram: <a href={`https://t.me/${info.telegram.bot}`} target="_blank" rel="noreferrer" style={{ color: "#c4b5fd" }}>@{info.telegram.bot}</a></p>}
+      {info?.telegram?.enabled && info.telegram.bot && <p className="note" style={{ marginBottom: 0 }}>Telegram: <a href={`https://t.me/${info.telegram.bot}`} target="_blank" rel="noreferrer" style={{ color: "#ffb4b0" }}>@{info.telegram.bot}</a></p>}
     </section>
   );
 }

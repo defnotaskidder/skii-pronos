@@ -51,7 +51,7 @@ export default function GrosseCote() {
       <div className="grid g-match">
         <div className="stack">
           {data ? (
-            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("~30 odds · {n} legs", { n: data.grosse?.legs?.length || 0 }) + (data.reviewed ? t(" · AI-checked") : "")} sub={t("Football only · real bookmaker prices")} icon="bolt"
+            <CouponCard coupon={data.grosse} title={t("Grosse cote du jour")} eyebrow={t("x100 · {n} legs", { n: data.grosse?.legs?.length || 0 }) + (data.reviewed ? t(" · AI-checked") : "")} sub={t("Same day · every sport · real bookmaker prices")} icon="bolt"
               footer={<CouponActions coupon={data.grosse} title={t("Grosse cote du jour")} />} />
           ) : <section className="card hero glow"><Skeleton rows={4} h={60} /></section>}
 
@@ -82,7 +82,7 @@ export default function GrosseCote() {
             </div>
 
             <div className="eyebrow" style={{ marginBottom: 8 }}>{t("Max legs · {n}", { n: maxLegs })}</div>
-            <input type="range" min={3} max={16} value={maxLegs} onChange={(e) => setMaxLegs(Number(e.target.value))} style={{ width: "100%", accentColor: "#c026d3", marginBottom: 16 }} aria-label={t("Maximum legs")} />
+            <input type="range" min={3} max={16} value={maxLegs} onChange={(e) => setMaxLegs(Number(e.target.value))} style={{ width: "100%", accentColor: "#f2553f", marginBottom: 16 }} aria-label={t("Maximum legs")} />
 
             <div className="eyebrow" style={{ marginBottom: 8 }}>{t("Kick-off within")}</div>
             <div className="seg" style={{ marginBottom: 18 }}>

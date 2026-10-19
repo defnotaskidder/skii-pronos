@@ -102,7 +102,7 @@ export function CouponLegs({ legs, compact = false }) {
             <span className="lg-main">
               <b>{tm(l.label)}</b>
               <small>{l.home} – {l.away} · {dayLabel(l.date)} {localTime(l.date)}{!compact && LEAGUE_BY_ID[l.league] ? ` · ${LEAGUE_BY_ID[l.league].name}` : ""}</small>
-              {!compact && l.note ? <small style={{ color: "#c4b5fd", whiteSpace: "normal" }}>{t("AI:")} {l.note}</small> : null}
+              {!compact && l.note ? <small style={{ color: "#ffb4b0", whiteSpace: "normal" }}>{t("AI:")} {l.note}</small> : null}
               {l.leagueStatus === "strong" || l.leagueStatus === "weak" || l.result || l.live?.result || l.live?.state === "in" ? (
                 <span style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}><LeagueBadge l={l} /><LegStatus l={l} /></span>
               ) : null}

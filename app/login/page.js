@@ -17,6 +17,7 @@ export default function Login() {
   const [msg, setMsg] = useState({ err: "", ok: "" });
 
   useEffect(() => { if (auth.user) router.replace("/"); }, [auth.user, router]);
+  useEffect(() => { auth.activate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- loads the sign-in library
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e) => {
@@ -48,12 +49,12 @@ export default function Login() {
         <h1 style={{ margin: "0 0 4px", fontSize: 26, letterSpacing: "-.025em" }}>{mode === "signup" ? t("Create your account") : mode === "reset" ? t("Reset password") : t("Welcome back")}</h1>
         <p className="muted" style={{ margin: "0 0 20px" }}>{mode === "signup" ? t("Free. Save your history and get alerts on every device.") : mode === "reset" ? t("We'll email you a reset link.") : t("Sign in to sync your coupons and alerts.")}</p>
 
-        {!auth.ready ? (
+        {!auth.ready || !auth.active ? (
           <div className="shimmer" style={{ height: 150 }} />
         ) : !auth.enabled ? (
           <div className="card flat tight" style={{ background: "rgba(255,255,255,.03)" }}>
             <div className="row" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
-              <Icon name="lock" size={18} style={{ color: "#c4b5fd", marginTop: 2, flex: "none" }} />
+              <Icon name="lock" size={18} style={{ color: "#ffb4b0", marginTop: 2, flex: "none" }} />
               <div>
                 <b>{t("Accounts aren't switched on yet")}</b>
                 <p className="muted" style={{ margin: "6px 0 0", fontSize: 13 }}>{t("The sign-in backend runs on Supabase. Connect a Supabase database to this project in Vercel (Storage → Supabase) and redeploy, and this form goes live. Until then everything works without an account.")}</p>
@@ -82,9 +83,9 @@ export default function Login() {
             </form>
             <div className="row" style={{ justifyContent: "space-between", marginTop: 16, fontSize: 13 }}>
               {mode === "signin" ? <button className="muted" onClick={() => setMode("reset")}>{t("Forgot password?")}</button> : <button className="muted" onClick={() => setMode("signin")}>{t("Back to sign in")}</button>}
-              {mode !== "signup" && auth.providers.signup !== false ? <button style={{ color: "#c4b5fd", fontWeight: 650 }} onClick={() => setMode("signup")}>{t("Create an account")}</button> : null}
+              {mode !== "signup" && auth.providers.signup !== false ? <button style={{ color: "#ffb4b0", fontWeight: 650 }} onClick={() => setMode("signup")}>{t("Create an account")}</button> : null}
             </div>
-            <p className="note" style={{ marginBottom: 0 }}>{t("By continuing you confirm you are 18 or older and accept the")} <Link href="/legal#terms" style={{ color: "#c4b5fd" }}>{t("terms")}</Link> {t("and the")} <Link href="/legal#privacy" style={{ color: "#c4b5fd" }}>{t("privacy policy")}</Link>.</p>
+            <p className="note" style={{ marginBottom: 0 }}>{t("By continuing you confirm you are 18 or older and accept the")} <Link href="/legal#terms" style={{ color: "#ffb4b0" }}>{t("terms")}</Link> {t("and the")} <Link href="/legal#privacy" style={{ color: "#ffb4b0" }}>{t("privacy policy")}</Link>.</p>
           </>
         )}
       </div>

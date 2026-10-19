@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Icon from "./Icons";
 import Logo, { LogoMark } from "./Logo";
-import { useBoard, useSlip, useTrack } from "./Providers";
+import { useLiveCount, useSlip, useTrack } from "./Providers";
+import { MusicButton, MusicSwitch, SnowSwitch } from "./Ambience";
 import { useNotify, NICON } from "./Notify";
 import { useAuth } from "./Auth";
 import { useT, LangSwitch } from "./Lang";
@@ -18,9 +20,18 @@ const NAV = [
   { href: "/matches", label: "Matches", icon: "ball" },
   { href: "/live", label: "Live", icon: "live", live: true },
   { href: "/coupon", label: "Coupon du jour", icon: "ticket" },
+  { href: "/vip", label: "VIP builds", icon: "crown" },
   { href: "/grosse-cote", label: "Grosse cote", icon: "bolt" },
   { href: "/history", label: "History", icon: "history" },
   { href: "/record", label: "Track record", icon: "trophy" },
+];
+// Phone tab bar (the sketch): home, every pick, the record, the big-odds builds. The rest sits in
+// the header menu.
+const TABS = [
+  { href: "/", label: "Home", icon: "home" },
+  { href: "/matches", label: "Picks", icon: "ball" },
+  { href: "/record", label: "Stats", icon: "chart" },
+  { href: "/vip", label: "VIP", icon: "crown" },
 ];
 const ACCOUNT = [
   { href: "/notifications", label: "Notifications", icon: "bell", notif: true },
@@ -32,7 +43,7 @@ const active = (path, href) => (href === "/" ? path === "/" : path.startsWith(hr
 export default function Shell({ children }) {
   const path = usePathname();
   const router = useRouter();
-  const { live } = useBoard();
+  const liveN = useLiveCount();
   const { unread } = useNotify();
   const auth = useAuth();
   const { t } = useT();
@@ -56,7 +67,7 @@ export default function Shell({ children }) {
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className={active(path, n.href) ? "on" : ""}>
               <Icon name={n.icon} />{t(n.label)}
-              {n.live && live.length > 0 && <span className="count live">{live.length}</span>}
+              {n.live && liveN > 0 && <span className="count live">{liveN}</span>}
             </Link>
           ))}
         </nav>
@@ -90,11 +101,10 @@ export default function Shell({ children }) {
         <div className="wrap">{children}</div>
       </main>
 
-      <nav className="bottom-nav">
-        {[NAV[0], NAV[1], NAV[2], NAV[3], { href: auth.user ? "/settings" : "/login", label: auth.user ? "Me" : "Sign in", icon: "user" }].map((n) => (
+      <nav className="bottom-nav" aria-label={t("Navigation")}>
+        {TABS.map((n) => (
           <Link key={n.href} href={n.href} className={active(path, n.href) ? "on" : ""}>
-            <Icon name={n.icon} />{n.label === "Coupon du jour" ? t("Coupon") : t(n.label)}
-            {n.live && live.length > 0 && <span className="pip" />}
+            <Icon name={n.icon} />{t(n.label)}
           </Link>
         ))}
       </nav>
@@ -104,22 +114,106 @@ export default function Shell({ children }) {
   );
 }
 
-// Page header with the bell + avatar tiles.
-export function Top({ title, sub, children }) {
+// Page header: music, bell, (phone) menu and account tiles. `brand` shows "Skii Pronos" as the
+// title (home page).
+export function Top({ title, sub, children, brand = false }) {
   const { t } = useT();
+  // the header's real height, for whatever sticks below it (--top-h)
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty("--top-h", `${Math.round(el.getBoundingClientRect().height)}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <header className="top">
-      <Link href="/" className="mobile-only top-logo" aria-label={t("Skii Pronos home")}><LogoMark size={38} animate /></Link>
+    <header className="top" ref={ref}>
+      <Link href="/" className="mobile-only top-logo" aria-label={t("Skii Pronos home")}><LogoMark size={34} animate /></Link>
       <div style={{ minWidth: 0 }}>
-        <h1>{title}</h1>
+        {brand ? <h1 className="brand-title"><span className="red">Skii</span> Pronos</h1> : <h1>{title}</h1>}
         {sub && <div className="sub">{sub}</div>}
       </div>
       <div className="top-actions">
         {children}
+        <span className="desktop-only" style={{ display: "contents" }}><MusicButton /></span>
         <Bell />
+        <MenuButton />
         <AvatarTile />
       </div>
     </header>
+  );
+}
+
+// Phone menu: every page the tab bar doesn't carry, plus the snow / music / language switches.
+function MenuButton() {
+  const { t } = useT();
+  const path = usePathname();
+  const liveN = useLiveCount();
+  const auth = useAuth();
+  const { unread } = useNotify();
+  const [open, setOpen] = useState(false);
+  const btn = useRef(null), sheet = useRef(null);
+  useEffect(() => { setOpen(false); }, [path]);
+  // a real modal: focus moves in, Escape closes, Tab stays inside, focus returns to the button
+  useEffect(() => {
+    if (!open) return undefined;
+    const box = sheet.current;
+    box?.querySelector("button, a")?.focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") { setOpen(false); return; }
+      if (e.key !== "Tab" || !box) return;
+      const items = [...box.querySelectorAll("a, button, input")];
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    const trigger = btn.current;
+    return () => { document.removeEventListener("keydown", onKey); trigger?.focus?.(); };
+  }, [open]);
+  const links = [
+    ...NAV.filter((n) => n.href !== "/"),
+    ...ACCOUNT,
+    { href: auth.user ? "/settings" : "/login", label: auth.user ? "Account" : "Sign in", icon: "user" },
+    { href: "/legal", label: "Legal", icon: "shield" },
+  ];
+  return (
+    <>
+      <button ref={btn} className="tile-btn mobile-only" aria-label={t("Menu")} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <Icon name="menu" />
+        {liveN > 0 && <span className="badge-dot live" />}
+      </button>
+      {open && createPortal((
+        // rendered at the page root: inside the sticky header the tab bar would draw over it
+        <>
+          <div className="drawer-bg" onClick={() => setOpen(false)} />
+          <aside ref={sheet} className="drawer menu-sheet" role="dialog" aria-modal="true" aria-label={t("Menu")}>
+            <div className="row">
+              <h2 style={{ margin: 0, fontSize: 19 }}><span className="red">Skii</span> Pronos</h2>
+              <span className="spacer" />
+              <button className="icon-btn" aria-label={t("Close")} onClick={() => setOpen(false)}><Icon name="x" /></button>
+            </div>
+            <nav className="menu-links">
+              {links.map((n) => (
+                <Link key={n.href + n.label} href={n.href} className={active(path, n.href) ? "on" : ""}>
+                  <Icon name={n.icon} /><span>{t(n.label)}</span>
+                  {n.live && liveN > 0 && <span className="count live">{liveN}</span>}
+                  {n.notif && unread > 0 && <span className="count">{unread}</span>}
+                </Link>
+              ))}
+            </nav>
+            <div className="menu-switches">
+              <SnowSwitch />
+              <MusicSwitch />
+              <div className="row" style={{ justifyContent: "space-between" }}><span className="muted">{t("Language")}</span><LangSwitch /></div>
+            </div>
+            <p className="note" style={{ margin: "6px 2px 0" }}>{t("18+ · Bet responsibly. No pick is a guarantee.")}</p>
+          </aside>
+        </>
+      ), document.body)}
+    </>
   );
 }
 

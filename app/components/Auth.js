@@ -3,7 +3,7 @@
 // server reports the project's public settings (see /api/auth-config); until then the site
 // works fully signed-out and the sign-in page explains what's missing.
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { authProviders, getSupabase } from "../../lib/supabase";
+import { authProviders, authWanted, getSupabase } from "../../lib/supabase";
 
 const Ctx = createContext(null);
 export const useAuth = () => useContext(Ctx);
@@ -13,9 +13,13 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
   const [providers, setProviders] = useState({});
+  const [active, setActive] = useState(false);
+  useEffect(() => { if (authWanted()) setActive(true); else setReady(true); }, []);
 
   useEffect(() => {
+    if (!active) return undefined;
     let sub, alive = true;
+    setReady(false);
     getSupabase().then(async (client) => {
       if (!alive) return;
       setSb(client);
@@ -29,10 +33,13 @@ export function AuthProvider({ children }) {
       setReady(true);
     });
     return () => { alive = false; sub?.unsubscribe(); };
-  }, []);
+  }, [active]);
 
   const value = useMemo(() => ({
-    enabled: !!sb, ready, user, providers,
+    enabled: !!sb, ready, user, providers, active,
+    // the sign-in page (and anything that needs an account) turns it on; both updates land in one
+    // render, so the page never flashes "accounts aren't switched on"
+    activate: () => { if (!active) { setReady(false); setActive(true); } },
     name: user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || null,
     signIn: async (email, password) => {
       const { error } = await sb.auth.signInWithPassword({ email, password });
@@ -53,7 +60,7 @@ export function AuthProvider({ children }) {
     },
     signOut: () => sb?.auth.signOut(),
     token: async () => { try { return (await sb?.auth.getSession())?.data?.session?.access_token || null; } catch { return null; } },
-  }), [sb, ready, user, providers]);
+  }), [sb, ready, user, providers, active]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
