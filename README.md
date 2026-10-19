@@ -9,7 +9,7 @@ Football predictions in French (English on request): every competition ESPN cove
 | **Accueil / Dashboard** | Coupon du jour, grosse cote, live now, top picks for the next 24 h, value spots, your 7-day record |
 | **Matchs** | 224 football competitions + NBA / NFL / NHL / MLB + European hockey (SHL, Liiga… via The Odds API), yesterday → +2 days. Filters: live / upcoming / finished, day, sport, men's / women's / youth, league, search |
 | **En direct** | Everything in play, scores and minutes refreshed every 15 s |
-| **Coupon du jour** | The safest coupon (~2.5) and the grosse cote (~30), AI-checked, plus a builder for any target 1.5 → 10 |
+| **Coupon du jour** | The safest coupon (~2.00, strong legs only) and the grosse cote (x100), AI-checked, plus a builder for any target 1.5 → 10 |
 | **Grosse cote** | Generator for 10 → 1000 (or any number): best possible chance at the target, "another one" for new combinations |
 | **Match page** | Engine pick + value pick, every market with chance / fair odds / price / EV, live model, stats, key moments, form, table, lineups, bookmaker comparison, **AI analyst**, team strength |
 | **Historique** | Every game the engine picked (graded automatically), the daily coupons archive, and your own tracked coupons with stakes and profit |
@@ -48,7 +48,8 @@ Team ratings are stored per league for every sport except soccer (`nhl:1`, `nfl:
 
 ## Daily coupons, express builds, live grosse cote
 
-- **Coupon du jour** — the combination of at least two real-priced legs (every sport) with the highest chance of landing at ~2.00 (`lib/coupon.js` buildTarget, `lib/daily.js`). It always publishes: the next 30 h, softer legs, then estimated prices are tried in turn. No coupon is certain; it's the best chance the prices allow.
+- **Coupon du jour** — the combination of at least two real-priced legs (every sport) with the highest chance of landing at ~2.00 (x1.86 counts) (`lib/coupon.js` buildTarget, `lib/daily.js`). Every leg is one the model rates **Med-High or High** (72 %+ with bookmaker-anchored data). It always publishes: the next 30 h, then estimated prices are tried before Medium legs are allowed. No coupon is certain: at real prices a x2.00 slip lands about half the time; the rules only make sure no leg is a coin flip.
+- **Leg rules for every coupon** (`PROFILES` in `lib/coupon.js`): no leg the model grades Low or Skip (x12 / x100 / x200 / x400 need Medium+, so a long-odds slip gets its odds from more strong legs, not underdogs); no game read without bookmaker prices (quality `stats` / `blind`, e.g. a youth World Cup); a leg can't contradict the game's own pick (score-grid check for football, hockey, NFL); and every coupon of the day backs the same market of a game. When the day can't reach a target under these rules, the closest build is published and the page says so.
 - **Express builds, same day** — x12.5, x100 (the grosse cote du jour), x200 and x300/400, each the highest-chance combination of the day's priced legs; stored and graded like the coupon du jour (`skii_daily` kinds `x12`, `grosse`, `x200`, `x400`).
 - **Live grosse cote** — `/api/live-coupon?target=20`, built from the games in play with the live models; prices are estimates (no free live odds feed).
 
