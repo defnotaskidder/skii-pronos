@@ -4,6 +4,7 @@ import { oaBoard } from "../../../lib/oddsapi-leagues";
 import { analysedBoard } from "../../../lib/board";
 import { syncBoard, dailySettle, dbEnabled } from "../../../lib/db";
 import { learnFromGames } from "../../../lib/ratings";
+import { clvSweep } from "../../../lib/clv";
 import { tick } from "../../../lib/alerts";
 import { telegramEnabled, telegramSetup } from "../../../lib/messaging";
 
@@ -27,8 +28,9 @@ export async function GET(request) {
   await syncBoard(older.filter((e) => e.state === "post").map((ev) => ({ ev, analysis: null })));
   const rated = await learnFromGames([...rows.map((r) => r.ev), ...older]);
   const coupons = await dailySettle();
+  const clv = await clvSweep(150).catch((e) => ({ error: e.message })); // closing prices of the graded priced picks
   let telegram = null;
   if (telegramEnabled()) { try { telegram = await telegramSetup(); } catch (e) { telegram = { error: e.message }; } }
   const alerts = await tick({ force: when === "evening" ? "evening" : "morning" }).catch((e) => ({ error: e.message }));
-  return NextResponse.json({ ok: true, when, games: rows.length, older: older.length, rated, couponsChecked: coupons, telegram, alerts, ms: Date.now() - started });
+  return NextResponse.json({ ok: true, when, games: rows.length, older: older.length, rated, couponsChecked: coupons, clv, telegram, alerts, ms: Date.now() - started });
 }

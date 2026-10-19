@@ -106,6 +106,15 @@ export default function Record() {
               <div className="divider" />
               <div className="kv"><span>{t("Coupons du jour won")}</span><b>{d.daily.safe.n ? `${d.daily.safe.w}/${d.daily.safe.n} · ${d.daily.safe.units >= 0 ? "+" : ""}${d.daily.safe.units}u` : "—"}</b></div>
               <div className="kv"><span>{t("Grosses cotes won")}</span><b>{d.daily.grosse.n ? `${d.daily.grosse.w}/${d.daily.grosse.n} · ${d.daily.grosse.units >= 0 ? "+" : ""}${d.daily.grosse.units}u` : "—"}</b></div>
+              {d.clv?.n > 0 && (
+                <>
+                  <div className="kv" title={t("Pick odds vs the bookmaker's closing odds on the same market. Positive = our price was better than the close: the sign of an edge that holds over the long run.")}>
+                    <span>{t("Closing line value")}</span>
+                    <b style={{ color: d.clv.avg >= 0 ? GREEN : RED }}>{signed(d.clv.avg * 100, 1)}% · {t("beat the close {w}/{n}", { w: d.clv.beat, n: d.clv.n })}</b>
+                  </div>
+                  <p className="note" style={{ margin: "8px 0 0" }}>{t("Pick odds vs the bookmaker's closing odds on the same market. Positive = our price was better than the close: the sign of an edge that holds over the long run.")}</p>
+                </>
+              )}
             </section>
             <section className="card">
               <Head h="h3" title={t("Calibration")} sub={t("What the engine said vs what happened")} />

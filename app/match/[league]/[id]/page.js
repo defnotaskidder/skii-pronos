@@ -136,13 +136,14 @@ export default function MatchPage({ params }) {
           <section className="card flat">
             <div className="card-head"><h3>{t("Match facts")}</h3></div>
             {a?.xg && <div className="kv"><span>{a.unit === "pts" ? t("Expected score (model)") : t("Expected goals (model)")}</span><b className="num">{a.xg.home} – {a.xg.away}</b></div>}
-            {a?.model && <div className="kv"><span>{t("Skii line")}</span><b className="num">{ev.home.short} {a.model.line > 0 ? `+${a.model.line}` : a.model.line} · O/U {a.model.total}</b></div>}
+            {a?.model?.line !== undefined && <div className="kv"><span>{t("Skii line")}</span><b className="num">{ev.home.short} {a.model.line > 0 ? `+${a.model.line}` : a.model.line} · O/U {a.model.total}</b></div>}
+            {a?.model?.att && <div className="kv" title={t("Both clubs' learnt attack and defence (log goals vs the league average) and the games behind them")}><span>{t("Trained model xG")}</span><b className="num">{a.model.home} – {a.model.away}{a.model.weight ? ` · ${Math.round(a.model.weight * 100)}%` : ""}</b></div>}
             {data.ratings && <div className="kv"><span>{t("Team strength")}</span><b className="num">{Math.round(data.ratings.home)} – {Math.round(data.ratings.away)}</b></div>}
             {ev.odds && <div className="kv"><span>{ev.odds.provider} {ev.sport === "soccer" ? "1X2" : t("Moneyline")}</span><b className="num">{odds2(ev.odds.home)} / {ev.odds.draw ? odds2(ev.odds.draw) + " / " : ""}{odds2(ev.odds.away)}</b></div>}
             {ev.odds?.homeOpen && <div className="kv"><span>{ev.sport === "soccer" ? t("Opening 1X2") : t("Opening moneyline")}</span><b className="num">{odds2(ev.odds.homeOpen)} / {ev.odds.drawOpen ? odds2(ev.odds.drawOpen) + " / " : ""}{odds2(ev.odds.awayOpen)}</b></div>}
             {ev.odds?.spread && ev.sport !== "soccer" && <div className="kv"><span>{t("Spread")}</span><b className="num">{ev.home.short} {ev.odds.spread.line > 0 ? `+${ev.odds.spread.line}` : ev.odds.spread.line} · {odds2(ev.odds.spread.home)} / {odds2(ev.odds.spread.away)}</b></div>}
             {ev.odds?.total && <div className="kv"><span>{a?.unit === "pts" ? t("Points line") : t("Goal line")}</span><b className="num">O/U {ev.odds.total.line} · {odds2(ev.odds.total.over)} / {odds2(ev.odds.total.under)}</b></div>}
-            <div className="kv"><span>{t("Data quality")}</span><b>{a?.quality === "market" ? t("Full market") : a?.quality === "partial" ? t("1X2 only") : a?.quality === "stats" ? t("Table & form only") : a?.quality === "blind" ? t("League averages only") : "—"}</b></div>
+            <div className="kv"><span>{t("Data quality")}</span><b>{a?.quality === "market" ? t("Full market") : a?.quality === "partial" ? t("1X2 only") : a?.quality === "model" ? t("Trained model, no price yet") : a?.quality === "stats" ? t("Table & form only") : a?.quality === "blind" ? t("League averages only") : "—"}</b></div>
             {ev.venue && <div className="kv"><span>{t("Venue")}</span><b>{ev.venue}</b></div>}
           </section>
         </div>

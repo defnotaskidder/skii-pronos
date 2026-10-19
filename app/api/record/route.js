@@ -30,6 +30,14 @@ const curveOf = (list) => {
 };
 const streakOf = (graded) => { let s = 0; for (let i = graded.length - 1; i >= 0; i--) { if (graded[i].pick_result === "W") s++; else break; } return s; };
 const byTierOf = (graded) => Object.fromEntries(["High", "Med-High", "Medium", "Low"].map((t) => [t, line(graded.filter((x) => x.pick_tier === t))]));
+// Closing line value of the priced picks that have a closing price: average gap to the close and how
+// often the pick's price beat it (the long-run signal, independent of short-term luck).
+const clvOf = (priced) => {
+  const list = priced.filter((x) => typeof x.clv === "number" && Number.isFinite(x.clv));
+  if (!list.length) return null;
+  const avg = list.reduce((a, x) => a + x.clv, 0) / list.length;
+  return { n: list.length, avg: Math.round(avg * 10000) / 10000, beat: list.filter((x) => x.clv > 0).length, byTier: Object.fromEntries(["High", "Med-High", "Medium", "Low"].map((t) => { const l = list.filter((x) => x.pick_tier === t); return [t, l.length ? { n: l.length, avg: Math.round(l.reduce((a, x) => a + x.clv, 0) / l.length * 10000) / 10000 } : null]; })) };
+};
 
 // Every league with graded picks in the window or picks waiting to be played, with what the
 // engine has learned about it (status strong / neutral / weak / learning).
@@ -79,6 +87,7 @@ export async function GET(request) {
       return {
         all: line(graded), priced: line(gradedPriced), modelOnly: line(graded.filter((x) => x.pick_est)),
         byTier: byTierOf(graded), byTierPriced: byTierOf(gradedPriced),
+        clv: clvOf(priced),
         leagues,
         best: leagues.filter((l) => l.status === "strong").sort((a, b) => b.pPos - a.pPos).slice(0, 6),
         weak: leagues.filter((l) => l.status === "weak").sort((a, b) => a.pPos - b.pPos),
