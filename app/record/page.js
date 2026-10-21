@@ -106,6 +106,7 @@ export default function Record() {
               <div className="divider" />
               <div className="kv"><span>{t("Coupons du jour won")}</span><b>{d.daily.safe.n ? `${d.daily.safe.w}/${d.daily.safe.n} · ${d.daily.safe.units >= 0 ? "+" : ""}${d.daily.safe.units}u` : "—"}</b></div>
               <div className="kv"><span>{t("Grosses cotes won")}</span><b>{d.daily.grosse.n ? `${d.daily.grosse.w}/${d.daily.grosse.n} · ${d.daily.grosse.units >= 0 ? "+" : ""}${d.daily.grosse.units}u` : "—"}</b></div>
+              {d.daily.special?.n > 0 && <div className="kv"><span>{t("Special nights won")}</span><b>{`${d.daily.special.w}/${d.daily.special.n} · ${d.daily.special.units >= 0 ? "+" : ""}${d.daily.special.units}u`}</b></div>}
               {d.clv?.n > 0 && (
                 <>
                   <div className="kv" title={t("Pick odds vs the bookmaker's closing odds on the same market. Positive = our price was better than the close: the sign of an edge that holds over the long run.")}>

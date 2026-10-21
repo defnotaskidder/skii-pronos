@@ -713,3 +713,9 @@ body::before { background: radial-gradient(900px 520px at 85% -10%, rgba(229, 72
   .has-music .main { padding-bottom: 260px; }
 }
 @media (min-width: 1024px) { .has-music .slip-fab { bottom: 160px; } }
+
+/* ---- special night (Champions League…) ---- */
+.special-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin: 0 0 18px; border-radius: 18px; text-decoration: none; color: inherit;
+  background: radial-gradient(420px 200px at 100% 0%, rgba(255, 112, 67, .26), transparent 60%), linear-gradient(135deg, #2a1836, #1b1b1f); border: 1px solid rgba(255, 208, 204, .22); }
+.special-card .sp-star { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(229, 72, 77, .22); color: #ffd0cc; flex: none; }
+.special-card small { display: block; margin-top: 3px; font-size: 12.5px; }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analysedBoard, boardForClient, remember } from "../../../lib/board";
 import { allWithStatus, couponsOfTheDay, EXPRESS, KINDS } from "../../../lib/daily";
+import { specialOfTheDay } from "../../../lib/special";
 import { dailyGet, topPickRows } from "../../../lib/db";
 import { LEAGUE_BY_ID } from "../../../lib/leagues";
 
@@ -70,9 +71,21 @@ async function payload() {
     coupons = { day: s.day, safe: brief(s.safe, 2), ...Object.fromEntries(EXPRESS.map((b) => [b.kind, brief(s[b.kind], b.target)])) };
   } catch { coupons = { building: true }; }
 
+  // the special night (Champions League…): a brief for the home card; built on first request like the coupons
+  let special = null;
+  try {
+    const sp = await Promise.race([specialOfTheDay(rows), new Promise((_, rej) => setTimeout(() => rej(new Error("building")), 8000))]);
+    if (sp && !sp.none) {
+      const c = sp.coupons?.special;
+      special = { day: sp.day, league: sp.league, name: sp.name, fr: sp.fr, n: sp.games.length, kick: sp.games[0]?.date || null, live: sp.live, done: sp.done, reviewed: sp.reviewed,
+        coupon: c?.legs?.length ? { odds: c.odds, n: c.legs.length, chance: c.chance, status: c.status } : null };
+    }
+  } catch { special = { building: true }; }
+
   return {
     updated: new Date().toISOString(),
     live: events.filter((e) => e.state === "in").length,
+    special,
     stats,
     // live tab: the day's top picks in play first (by rank), then other live games with a pick
     picks: {

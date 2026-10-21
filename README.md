@@ -62,6 +62,10 @@ Team ratings are stored per league for every sport except soccer (`nhl:1`, `nfl:
 
 The phone layout follows the sketch: four tabs (Accueil, Pronos, Stats, VIP), a header menu with every other page, snow (switchable) and the Juice WRLD music player (Spotify's official embed, switchable — songs can't be hosted). The home page reads only `/api/home`; the full board loads on the pages that need it.
 
+## Special nights (Champions League…)
+
+On a matchday of a big competition (`SPECIAL` in `lib/special.js`: Champions League with 3+ games today, Europa League / Conference League with 4+, World Cup, Euro, Copa América, CAN, Club World Cup, Libertadores) the site publishes a **special night** (`/special`, card on the home page, `/api/special`): every game of the slate with its real prices, the trained model's view, the line's movement since it opened and the engine's pick plus playable alternatives; one AI pass with web search over the whole slate (line-ups, injuries, suspensions, rotation, what is at stake) gives each game a verdict — banker / pick / avoid — and a one-line note; then the night's two coupons are built from the slate's priced legs with the games the AI flagged left out: **the night's coupon** (~x2, `special`) and **the night's grosse cote** (~x10, `special_x`, at most 2 estimated legs). Both are stored in `skii_daily` next to the daily coupons, graded with them and counted on the record page; the dossier is kept for the day in `skii_config` (`special:<day>`), so what was published before kick-off stays up. No AI key → published unreviewed, as the daily coupons are.
+
 ## Alerts, bots and the daily posts
 
 - **In the browser**: toasts + optional pop-ups while the site is open; **push** alerts with the site closed (Settings → Alerts).

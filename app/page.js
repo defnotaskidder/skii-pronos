@@ -82,6 +82,8 @@ export default function Home() {
       )}
       <Link href="/matches" className="see-all">{t("See all picks")} <Icon name="chevron" size={15} /></Link>
 
+      {data?.special && <SpecialCard s={data.special} />}
+
       <div className="sec-label">{t("COUPON DU JOUR")}</div>
       <CouponDuJour c={data?.coupons} />
 
@@ -125,6 +127,24 @@ export default function Home() {
       )}
       <p className="note center">{t("18+ only. No pick is guaranteed. Bet responsibly.")}</p>
     </div>
+  );
+}
+
+// The special night (Champions League…): one card to the full page.
+function SpecialCard({ s }) {
+  const { t, lang } = useT();
+  const name = (lang === "fr" && s.fr) || s.name || "";
+  const c = s.coupon;
+  return (
+    <Link href="/special" className="special-card">
+      <span className="sp-star"><Icon name="star" size={20} /></span>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span className="eyebrow" style={{ color: "#ffd0cc" }}>{t("SPECIAL")}{s.building ? "" : ` · ${t("{n} games tonight", { n: s.n })}`}</span>
+        <b className="ell" style={{ display: "block", marginTop: 2 }}>{s.building ? t("Special night being built…") : name}</b>
+        <small className="muted">{s.building ? t("Every game analysed, team news checked by the AI") : c ? `${t("The night's coupon")} · x ${odds2(c.odds)} · ${chanceText(c.chance, lang)}${c.status === "won" ? ` · ${t("pick.won")}` : c.status === "lost" ? ` · ${t("pick.lost")}` : ""}` : s.done >= s.n ? t("Tonight's games are over") : t("Every game analysed, team news checked by the AI")}</small>
+      </span>
+      <Icon name="chevron" />
+    </Link>
   );
 }
 

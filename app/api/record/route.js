@@ -93,7 +93,7 @@ export async function GET(request) {
         weak: leagues.filter((l) => l.status === "weak").sort((a, b) => a.pPos - b.pPos),
         skillReady: !!skill?.ready,
         curve: curveOf(g), curvePriced: curveOf(priced),
-        calibration: calib, daily: { safe: dailyLine("safe"), grosse: dailyLine("grosse"), x12: dailyLine("x12"), x200: dailyLine("x200"), x400: dailyLine("x400") },
+        calibration: calib, daily: { safe: dailyLine("safe"), grosse: dailyLine("grosse"), x12: dailyLine("x12"), x200: dailyLine("x200"), x400: dailyLine("x400"), special: dailyLine("special") },
         streak: streakOf(graded), streakPriced: streakOf(gradedPriced), since: g[0]?.kickoff || null,
       };
     });
