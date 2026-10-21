@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { analysedBoard } from "../../../lib/board";
 import { reviewSpecial, specialOfTheDay } from "../../../lib/special";
 
+export const dynamic = "force-dynamic"; // never prerendered: the slate changes all day and ?review=1 must reach the function
 export const maxDuration = 300; // ?review=1 runs the AI pass over the slate (web search, up to 4 minutes)
 
 // The special night: every game of today's big competition analysed, the AI's verdicts and the
