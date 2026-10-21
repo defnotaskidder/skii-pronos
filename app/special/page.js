@@ -2,7 +2,7 @@
 // Spécial matchday: the night's two coupons, then every game of the slate with the engine's pick,
 // the market's move, the model's expected goals and the AI's verdict with team news.
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Icon from "../components/Icons";
 import { Top } from "../components/Shell";
 import { useT } from "../components/Lang";
@@ -12,6 +12,7 @@ import { Skeleton, TeamLogo, Tier, TriBar, liveLabel, localTime, odds2, pct, use
 function useSpecial() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const kicked = useRef(false); // the AI pass is asked for once per page view while it is still pending
   useEffect(() => {
     let alive = true, timer;
     const get = async () => {
@@ -21,6 +22,10 @@ function useSpecial() {
         const d = await r.json();
         if (!alive) return;
         if (d.error) setError(d.error); else { setData(d); setError(""); }
+        if (!d.error && !d.none && !d.reviewed && !d.reviewing && !kicked.current && d.games?.some((g) => g.state === "pre")) {
+          kicked.current = true;
+          fetch("/api/special?review=1").then((x) => x.json()).then((x) => { if (alive && x?.games) setData(x); }).catch(() => {});
+        }
       } catch { if (alive) setError("offline"); }
       if (alive) timer = setTimeout(get, 120e3);
     };
