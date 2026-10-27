@@ -719,3 +719,39 @@ body::before { background: radial-gradient(900px 520px at 85% -10%, rgba(229, 72
   background: radial-gradient(420px 200px at 100% 0%, rgba(255, 112, 67, .26), transparent 60%), linear-gradient(135deg, #2a1836, #1b1b1f); border: 1px solid rgba(255, 208, 204, .22); }
 .special-card .sp-star { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(229, 72, 77, .22); color: #ffd0cc; flex: none; }
 .special-card small { display: block; margin-top: 3px; font-size: 12.5px; }
+
+/* ---- dashboard: today's games, won coupons ---- */
+.g-list { display: grid; gap: 8px; }
+.g-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); color: inherit; }
+.g-row:hover { border-color: rgba(229, 72, 77, .45); }
+.g-when { display: grid; gap: 2px; justify-items: start; }
+.g-when b { font-size: 13px; }
+.g-when small { font-size: 10.5px; color: var(--dim); letter-spacing: .04em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 54px; }
+.g-when .pill.live { height: 20px; padding: 0 7px; font-size: 10.5px; }
+.g-teams { display: grid; gap: 3px; min-width: 0; }
+.g-team { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 650; min-width: 0; }
+.g-team .ell { min-width: 0; }
+.g-team .num { margin-left: auto; font-weight: 800; padding-left: 8px; }
+.g-team.win { color: #fff; }
+.g-pick { display: grid; justify-items: end; gap: 2px; text-align: right; max-width: 42vw; }
+.g-pick small { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.g-pick b { font-size: 14px; }
+.g-pick .res { font-size: 11px; }
+.g-more { display: flex; justify-content: center; align-items: center; gap: 4px; padding: 12px; color: #60a5fa; font-weight: 600; font-size: 14px; }
+.won-strip { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 6px; margin: 0 -2px; }
+.won-strip::-webkit-scrollbar { display: none; }
+.won-card { flex: 0 0 196px; display: grid; gap: 4px; padding: 13px 14px; border-radius: 16px; color: inherit; background: linear-gradient(160deg, rgba(34, 197, 94, .16), rgba(34, 197, 94, .04)); border: 1px solid rgba(34, 197, 94, .35); }
+.won-card .w-head { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+.won-card .w-head .pill { margin-left: auto; height: 20px; padding: 0 7px; font-size: 10.5px; }
+.won-card .w-odds { font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: #4ade80; }
+.won-card .w-legs { font-size: 11.5px; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.won-rec { display: flex; align-items: center; gap: 10px; margin: 8px 2px 0; font-size: 12.5px; color: var(--muted); }
+.won-rec b { color: #4ade80; }
+.safe-empty { display: grid; gap: 6px; padding: 18px; border-radius: 18px; background: var(--card); border: 1px dashed rgba(255, 255, 255, .22); }
+.safe-empty b { font-size: 15px; }
+.safe-empty small { color: var(--muted); }
+.home .ticket { margin-bottom: 4px; }
+.sec-head { display: flex; align-items: baseline; gap: 10px; margin: 18px 2px 10px; }
+.sec-head .sec-label { margin: 0; }
+.sec-head .link { margin-left: auto; font-size: 12.5px; color: #60a5fa; font-weight: 600; }
+@media (max-width: 420px) { .g-row { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8px; padding: 10px; } .g-pick { max-width: 38vw; } }

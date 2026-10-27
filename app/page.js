@@ -9,8 +9,8 @@ import { Top } from "./components/Shell";
 import { useT } from "./components/Lang";
 import { useSlip } from "./components/Providers";
 import { toLeg } from "./components/Match";
-import { chanceText } from "./components/Coupon";
-import { Skeleton, TeamLogo, localTime, odds2 } from "./components/ui";
+import { chanceText, CouponActions, CouponCard } from "./components/Coupon";
+import { Skeleton, TeamLogo, dayLabel, localTime, odds2 } from "./components/ui";
 import { leagueName } from "../lib/leagues";
 
 const CHANNEL = process.env.NEXT_PUBLIC_WHATSAPP_CHANNEL || "";
@@ -64,7 +64,11 @@ export default function Home() {
       <p className="tagline">{t("Every pick posted before kickoff. Every result public.")}</p>
       {error && <div className="error" style={{ marginBottom: 12 }}>{error === "offline" ? t("Couldn't reach the server — retrying.") : error}</div>}
 
+      <SafeCoupon s={data?.safe} coupons={data?.coupons} loading={!data} />
+
       <Stats s={data?.stats} loading={!data} />
+
+      <TodayGames g={data?.games} loading={!data} />
 
       <div className="tabs-row" role="tablist">
         {TABS.map(([k, label]) => (
@@ -82,10 +86,9 @@ export default function Home() {
       )}
       <Link href="/matches" className="see-all">{t("See all picks")} <Icon name="chevron" size={15} /></Link>
 
-      {data?.special && <SpecialCard s={data.special} />}
+      <WonCoupons w={data?.won} />
 
-      <div className="sec-label">{t("COUPON DU JOUR")}</div>
-      <CouponDuJour c={data?.coupons} />
+      {data?.special && <SpecialCard s={data.special} />}
 
       <div className="sec-label">{t("EXPRESS BUILDS")} · {t("same day")}</div>
       <div className="builds">
@@ -205,20 +208,95 @@ function PickCard({ p }) {
   );
 }
 
-function CouponDuJour({ c }) {
+const KIND_NAME = { safe: "Coupon du jour", x12: "Express x12.5", grosse: "Express x100", x200: "Express x200", x400: "Express x300/400" };
+
+// The dashboard's main card: the day's safe coupon with every leg and its live status.
+function SafeCoupon({ s, coupons, loading }) {
   const { t, lang } = useT();
-  const s = c?.safe?.n ? c.safe : null;
+  if (loading) return <Skeleton rows={1} h={230} />;
+  if (!s?.legs?.length) {
+    return (
+      <div className="safe-empty">
+        <b>{t("Safe coupon")}</b>
+        <small>{coupons?.building ? t("Safe coupon being built — back in a minute.") : coupons?.safe?.empty ? t("Today's games are over — tomorrow's safe coupon comes in the morning.") : t("No legs strong enough right now. The engine would rather skip than force a coupon.")}</small>
+      </div>
+    );
+  }
   return (
-    <Link href="/coupon" className="cdj">
-      <span className="stat-ico" style={{ margin: 0 }}><Icon name="ticket" /></span>
-      <span style={{ minWidth: 0 }}>
-        <b>{t("Coupon du jour")}</b>
-        <small>{s ? `${t("{n} selections", { n: s.n })} · ${t("hit chance")} ${chanceText(s.chance, lang)}` : c?.building ? t("Being built…") : t("Safest legs of the day, real prices")}</small>
-      </span>
-      <span className="spacer" />
-      {s && <b className="cdj-odds num">{odds2(s.odds)}</b>}
-      {s?.status && s.status !== "open" && <span className={`b-state ${s.status}`}>{s.status === "won" ? t("pick.won") : t("pick.lost")}</span>}
-    </Link>
+    <CouponCard coupon={s} title={t("Safe coupon")} eyebrow={`${t("SAFE COUPON OF THE DAY")} · ${dayLabel(s.legs[0].date)}`} compact icon="ticket"
+      sub={`${t("{n} legs", { n: s.legs.length })} · ${t("hit chance")} ${chanceText(s.chance, lang)}`}
+      footer={<CouponActions coupon={s} title={t("Coupon du jour")} extra={<Link href="/coupon" className="btn soft"><Icon name="ticket" />{t("Open the full coupon")}</Link>} />} />
+  );
+}
+
+// Today's games in the main leagues: live ones first, score, the engine's pick and its price.
+function TodayGames({ g, loading }) {
+  const { t, tm } = useT();
+  if (loading) return <><div className="sec-label">{t("TODAY'S GAMES")}</div><Skeleton rows={4} h={64} /></>;
+  if (!g) return null;
+  const res = (r) => (r === "W" ? <span className="res won">{t("pick.won")}</span> : r === "L" ? <span className="res lost">{t("pick.lost")}</span> : r === "V" ? <span className="res void">{t("pick.void")}</span> : null);
+  return (
+    <>
+      <div className="sec-head">
+        <div className="sec-label">{t("TODAY'S GAMES")}</div>
+        <span className="muted" style={{ fontSize: 12.5 }}>{g.live ? t("{n} games today · {l} live", { n: g.n, l: g.live }) : t("{n} games today", { n: g.n })}</span>
+      </div>
+      {g.list.length ? (
+        <div className="g-list">
+          {g.list.map((e) => {
+            const done = e.state === "post";
+            const hw = done && e.home.score > e.away.score, aw = done && e.away.score > e.home.score;
+            return (
+              <Link key={e.id} href={`/match/${e.league}/${e.id}`} className="g-row">
+                <span className="g-when">
+                  {e.state === "in" ? <span className="pill live">{e.minute ? `${e.minute}'` : e.detail || t("LIVE")}</span> : done ? <b className="muted">{t("FT")}</b> : <b className="num">{localTime(e.date)}</b>}
+                  <small>{e.short}</small>
+                </span>
+                <span className="g-teams">
+                  <span className={`g-team ${hw ? "win" : ""}`}><TeamLogo team={e.home} size={18} /><span className="ell">{e.home.short}</span>{e.state !== "pre" && <b className="num">{e.home.score ?? 0}</b>}</span>
+                  <span className={`g-team ${aw ? "win" : ""}`}><TeamLogo team={e.away} size={18} /><span className="ell">{e.away.short}</span>{e.state !== "pre" && <b className="num">{e.away.score ?? 0}</b>}</span>
+                </span>
+                <span className="g-pick">
+                  {e.pick ? (<>
+                    <small>{e.pick.top ? "🔥 " : ""}{tm(e.pick.label)}</small>
+                    <b className="num">{e.pick.estimated ? "≈" : "@ "}{odds2(e.pick.odds)}</b>
+                    {res(e.pick.result)}
+                  </>) : <small className="dim">{t("No pick")}</small>}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : <div className="empty">{t("No game in the top leagues today.")}</div>}
+      {g.n > g.list.length && <Link href="/matches" className="g-more">{t("See all {n} games", { n: g.n })} <Icon name="chevron" size={15} /></Link>}
+    </>
+  );
+}
+
+// Coupons won in the last 30 days, newest first, with the coupon record.
+function WonCoupons({ w }) {
+  const { t } = useT();
+  if (!w) return null;
+  return (
+    <>
+      <div className="sec-head">
+        <div className="sec-label">{t("WON COUPONS")}</div>
+        <Link href="/history" className="link">{t("History")}</Link>
+      </div>
+      {w.list.length ? (
+        <div className="won-strip">
+          {w.list.map((c, i) => (
+            <Link key={`${c.day}-${c.kind}`} href="/history" className="won-card fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+              <span className="w-head"><Icon name="trophy" size={14} /><span className="ell">{t(KIND_NAME[c.kind] || c.kind)}</span><span className="pill green">{t("pick.won")}</span></span>
+              <b className="w-odds num">x {odds2(c.odds)}</b>
+              <small className="muted">{dayLabel(c.day)} · {t("{n} legs", { n: c.n })}</small>
+              <span className="w-legs">{c.legs.join(" · ")}</span>
+            </Link>
+          ))}
+        </div>
+      ) : <div className="empty">{t("No coupon won yet — the first results land after tonight's games.")}</div>}
+      {w.total > 0 && <div className="won-rec"><Icon name="trophy" size={14} /><span>{t("{w} coupons won out of {n} graded in {d} days", { w: w.n, n: w.total, d: w.days })}</span></div>}
+    </>
   );
 }
 

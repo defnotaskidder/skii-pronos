@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { analysedBoard, boardForClient, remember, rememberShared } from "../../../lib/board";
 import { allWithStatus, couponsOfTheDay, EXPRESS, KINDS } from "../../../lib/daily";
 import { specialOfTheDay } from "../../../lib/special";
-import { dailyGet, topPickRows } from "../../../lib/db";
+import { dailyGet, dailyHistory, topPickRows } from "../../../lib/db";
 import { LEAGUE_BY_ID } from "../../../lib/leagues";
 
 export const maxDuration = 60;
@@ -63,13 +63,38 @@ async function payload() {
   const yCoupons = await dailyGet(yesterday).catch(() => null);
 
   // coupons: built on first request of the day (the AI check can take ~50 s) — don't hold the page
-  let coupons = null;
+  let coupons = null, safe = null;
   try {
     const d = await Promise.race([couponsOfTheDay(rows), new Promise((_, rej) => setTimeout(() => rej(new Error("building")), 8000))]);
     const s = allWithStatus(d, rows);
     const brief = (c, target) => (c?.legs?.length ? { odds: c.odds, n: c.legs.length, chance: c.chance, status: c.status, target: c.target ?? target, reached: c.reached } : c ? { empty: true } : null);
     coupons = { day: s.day, safe: brief(s.safe, 2), ...Object.fromEntries(EXPRESS.map((b) => [b.kind, brief(s[b.kind], b.target)])) };
+    // the safe coupon in full (its legs with live status) for the dashboard's main card
+    safe = s.safe ? { day: s.day, odds: s.safe.odds, chance: s.safe.chance, status: s.safe.status, legs: s.safe.legs || [] } : null;
   } catch { coupons = { building: true }; }
+
+  // today's games in the main leagues — live first, then upcoming (by league, then kick-off), finished last
+  const tier = (e) => LEAGUE_BY_ID[e.league]?.tier ?? 9;
+  const phase = (e) => (e.state === "in" ? 0 : e.state === "pre" ? 1 : 2);
+  const todays = events.filter((e) => dayOf(e.date) === today && !e.postponed && tier(e) <= 4)
+    .sort((a, b) => phase(a) - phase(b) || tier(a) - tier(b) || new Date(a.date) - new Date(b.date));
+  const gameOf = (e) => {
+    const p = e.top || (e.state === "post" ? e.done : null) || e.a?.pick;
+    return {
+      id: e.id, league: e.league, short: LEAGUE_BY_ID[e.league]?.short || e.league, sport: e.sport, date: e.date, state: e.state, detail: e.detail, minute: e.minute,
+      home: { short: e.home?.short, logo: e.home?.logo, score: e.home?.score }, away: { short: e.away?.short, logo: e.away?.logo, score: e.away?.score },
+      pick: p?.label && p.odds ? { label: p.label, odds: p.odds, estimated: !!(p.estimated ?? e.a?.pick?.estimated), result: e.done?.result || null, top: !!e.top } : null,
+    };
+  };
+  const games = { n: todays.length, live: todays.filter((e) => e.state === "in").length, list: todays.slice(0, 12).map(gameOf) };
+
+  // coupons won in the last 30 days (coupon du jour and the express builds), newest first
+  const hist = (await dailyHistory(30).catch(() => null)) || [];
+  const judged = hist.filter((c) => c.result === "W" || c.result === "L");
+  const won = {
+    days: 30, n: judged.filter((c) => c.result === "W").length, total: judged.length,
+    list: judged.filter((c) => c.result === "W").slice(0, 10).map((c) => ({ day: c.day, kind: c.kind, odds: c.odds, n: c.legs?.length || 0, legs: (c.legs || []).slice(0, 3).map((l) => `${l.home} – ${l.away}`) })),
+  };
 
   // the special night (Champions League…): a brief for the home card; built on first request like the coupons
   let special = null;
@@ -93,7 +118,7 @@ async function payload() {
       live: events.filter((e) => e.state === "in" && (e.top || e.a?.pick))
         .sort((a, b) => (a.top ? a.top.rank : 99) - (b.top ? b.top.rank : 99)).slice(0, 10).map(pickOf).filter(Boolean),
     },
-    coupons, kinds: KINDS,
+    coupons, kinds: KINDS, safe, games, won,
     yesterday: {
       picks: yest,
       coupons: yCoupons ? Object.fromEntries(KINDS.filter((k) => yCoupons[k]).map((k) => [k, { odds: yCoupons[k].odds, result: yCoupons[k].result || null }])) : null,
