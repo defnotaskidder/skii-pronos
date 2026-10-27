@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { analysedBoard, boardForClient, remember } from "../../../lib/board";
+import { analysedBoard, boardForClient, remember, rememberShared } from "../../../lib/board";
 import { allWithStatus, couponsOfTheDay, EXPRESS, KINDS } from "../../../lib/daily";
 import { specialOfTheDay } from "../../../lib/special";
 import { dailyGet, topPickRows } from "../../../lib/db";
@@ -114,7 +114,8 @@ async function weekend() {
 export async function GET(request) {
   try {
     const tab = request.nextUrl.searchParams.get("tab");
-    const data = tab === "weekend" ? await remember("home:weekend", 60e3, weekend) : await remember("home", 15e3, payload);
+    // the home payload is a shared snapshot: a cold server instance answers from the last one at once
+    const data = tab === "weekend" ? await remember("home:weekend", 60e3, weekend) : await rememberShared("home", 15e3, payload, { stale: 15 * 60e3 });
     return NextResponse.json(data, { headers: { "cache-control": "public, s-maxage=20, stale-while-revalidate=60" } });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 502 });

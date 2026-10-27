@@ -6,7 +6,7 @@ import { useSlip } from "./Providers";
 import { useNotify } from "./Notify";
 import { useT } from "./Lang";
 import { LEAGUE_BY_ID, leagueName } from "../../lib/leagues";
-import { settle } from "../../lib/model";
+import { settle } from "../../lib/settle";
 import { useFlash } from "./Motion";
 import { LeagueFlag, Ring, StatusPill, TeamLogo, Tier, dayLabel, liveLabel, localTime, odds2, pct, useNow } from "./ui";
 

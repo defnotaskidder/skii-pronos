@@ -7,7 +7,7 @@ import { useNotify } from "./Notify";
 import { useT } from "./Lang";
 import { load, save } from "./store";
 import { Ring, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "./ui";
-import { couponText } from "../../lib/coupon";
+import { couponText } from "../../lib/coupon-lite";
 import { CountUp } from "./Motion";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 import { translate } from "../../lib/i18n";

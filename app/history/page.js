@@ -7,7 +7,7 @@ import { useTrack } from "../components/Providers";
 import { useT } from "../components/Lang";
 import { LeagueFlag, Skeleton, TeamLogo, Tier, dayLabel, localTime, odds2, pct } from "../components/ui";
 import { chanceText } from "../components/Coupon";
-import { product } from "../../lib/coupon";
+import { product } from "../../lib/coupon-lite";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 import { CountUp } from "../components/Motion";
 import { load, save } from "../components/store";

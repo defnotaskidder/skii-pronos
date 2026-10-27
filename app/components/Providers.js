@@ -6,8 +6,8 @@ import { AuthProvider } from "./Auth";
 import { LangProvider, useT } from "./Lang";
 import { useAuth } from "./Auth";
 import { load, save } from "./store";
-import { product, hitChance } from "../../lib/coupon";
-import { settle } from "../../lib/model";
+import { product, hitChance } from "../../lib/coupon-lite";
+import { settle } from "../../lib/settle";
 
 // ---------------- board data (loaded by the pages that need it) ----------------
 // The full board is ~75 KB compressed. It loads only once a page asks for it (matches, live…):

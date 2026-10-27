@@ -13,8 +13,12 @@ import { useT, LangSwitch } from "./Lang";
 import { ago, odds2, pct, TeamLogo, Tier } from "./ui";
 import { CountUp, MotionLayer, useFlash } from "./Motion";
 import AgeGate from "./AgeGate";
-import { couponText } from "../../lib/coupon";
+import { couponText } from "../../lib/coupon-lite";
 
+// Only the pages most visitors open next are prefetched; on a slow connection the dozen other
+// route prefetches used to compete with the data the page is waiting for.
+const PREFETCH = new Set(["/", "/matches", "/live"]);
+const pre = (href) => (PREFETCH.has(href) ? undefined : false);
 const NAV = [
   { href: "/", label: "Dashboard", icon: "home" },
   { href: "/matches", label: "Matches", icon: "ball" },
@@ -65,7 +69,7 @@ export default function Shell({ children }) {
         <div className="nav-label">{t("Navigation")}</div>
         <nav className="nav">
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className={active(path, n.href) ? "on" : ""}>
+            <Link key={n.href} href={n.href} prefetch={pre(n.href)} className={active(path, n.href) ? "on" : ""}>
               <Icon name={n.icon} />{t(n.label)}
               {n.live && liveN > 0 && <span className="count live">{liveN}</span>}
             </Link>
@@ -74,7 +78,7 @@ export default function Shell({ children }) {
         <div className="nav-label">{t("Account")}</div>
         <nav className="nav">
           {ACCOUNT.map((n) => (
-            <Link key={n.href} href={n.href} className={active(path, n.href) ? "on" : ""}>
+            <Link key={n.href} href={n.href} prefetch={pre(n.href)} className={active(path, n.href) ? "on" : ""}>
               <Icon name={n.icon} />{t(n.label)}
               {n.notif && unread > 0 && <span className="count">{unread}</span>}
             </Link>
@@ -103,7 +107,7 @@ export default function Shell({ children }) {
 
       <nav className="bottom-nav" aria-label={t("Navigation")}>
         {TABS.map((n) => (
-          <Link key={n.href} href={n.href} className={active(path, n.href) ? "on" : ""}>
+          <Link key={n.href} href={n.href} prefetch={pre(n.href)} className={active(path, n.href) ? "on" : ""}>
             <Icon name={n.icon} />{t(n.label)}
           </Link>
         ))}
@@ -197,7 +201,7 @@ function MenuButton() {
             </div>
             <nav className="menu-links">
               {links.map((n) => (
-                <Link key={n.href + n.label} href={n.href} className={active(path, n.href) ? "on" : ""}>
+                <Link key={n.href + n.label} href={n.href} prefetch={pre(n.href)} className={active(path, n.href) ? "on" : ""}>
                   <Icon name={n.icon} /><span>{t(n.label)}</span>
                   {n.live && liveN > 0 && <span className="count live">{liveN}</span>}
                   {n.notif && unread > 0 && <span className="count">{unread}</span>}

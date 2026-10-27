@@ -79,6 +79,10 @@ On a matchday of a big competition (`SPECIAL` in `lib/special.js`: Champions Lea
 
 See `.env.example`. Fixtures, scores, stats, form, standings and the main odds come from ESPN's public feed and need no key. Accounts, history, ratings, alerts and bots need the Supabase database (Vercel → Storage → Supabase); the app creates its tables itself.
 
+**AI keys with a backup.** `ANTHROPIC_API_KEY` is the main key; `ANTHROPIC_API_KEYS` (comma-separated) lists backups, e.g. a key from a second account or billing. When a key is out of credits (402), invalid, forbidden or rate-limited, the next key takes over on the spot and the spent key rests (6 hours, 2 minutes for a rate limit), so the AI analyst and the coupon check keep working until every key is exhausted. `ENGINE_MODEL_FALLBACK` names a second model tried when the engine model is unavailable or overloaded.
+
+**Speed.** The site is static HTML on Vercel's edge; the data comes from small JSON routes (`/api/home` a few KB, `/api/board` ~50 KB compressed) cached 15–20 s on the CDN. Building the board from ESPN takes 10–20 s on a cold server instance (20 MB of feeds that don't fit Next's fetch cache), so the client board and the home payload are also kept as snapshots in the database (`skii_cache`): a fresh instance answers from the last snapshot at once (up to 15 minutes old) and rebuilds on the next poll. The browser bundle stays light: the prediction engine is server-only (the browser imports `lib/settle.js` and `lib/coupon-lite.js`), and only the pages visitors open next are prefetched.
+
 ## Run it locally
 
 ```bash
