@@ -3,6 +3,7 @@ import { summary } from "../../../lib/espn";
 import { analysedBoard, tablesFor } from "../../../lib/board";
 import { analyse, liveAnalyse } from "../../../lib/model";
 import { LEAGUE_BY_ID } from "../../../lib/leagues";
+import { aiWorthy } from "../../../lib/ai-gate";
 
 // Everything about one match: live state, stats, timeline, form, table, lineups,
 // the full market table from the model, and (when live) re-priced live probabilities.
@@ -26,7 +27,7 @@ export async function GET(request) {
     }
     const live = liveAnalyse(ev, analysis, sum.stats);
     const ratings = row?.ratings?.home && row?.ratings?.away ? { home: row.ratings.home.rating, away: row.ratings.away.rating, games: Math.min(row.ratings.home.games, row.ratings.away.games) } : null;
-    return NextResponse.json({ event: ev, analysis, live, ratings, ...strip(sum), league: LEAGUE_BY_ID[league] });
+    return NextResponse.json({ event: ev, analysis, live, ratings, ...strip(sum), league: LEAGUE_BY_ID[league], aiOk: aiWorthy(ev) });
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 502 });
   }

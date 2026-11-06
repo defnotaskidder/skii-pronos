@@ -458,6 +458,15 @@ function AiCard({ data }) {
     } catch { setState({ busy: false, res: null, err: t("The analyst didn't answer — try again.") }); }
   };
   const i = state.res?.insight;
+  if (data.aiOk === false) return (
+    <section className="card">
+      <div className="card-head">
+        <span className="stat-ico" style={{ margin: 0 }}><Icon name="sparkles" /></span>
+        <div><h3>{t("AI analyst")}</h3><div className="muted" style={{ fontSize: 12 }}>{t("Kept for the big matches")}</div></div>
+      </div>
+      <p className="note" style={{ margin: 0 }}>{t("The AI analyst is kept for the big matches (Champions League, Europa League, top-five leagues, playoffs, World Cup). The model's numbers above cover this one.")}</p>
+    </section>
+  );
   return (
     <section className="card">
       <div className="card-head">
