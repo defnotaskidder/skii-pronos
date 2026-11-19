@@ -65,7 +65,9 @@ async function payload() {
   const ladder = [];
   for (const { target, maxLegs } of RUNGS) ladder.push(await (async () => {
     const c = await vetted((ex) => buildTarget(pool, { target, profile: "grosse", maxLegs, perLeague: 3, adjust, skill, skipLeagues: weak, exclude: ex }), { veto });
-    if (!c?.legs?.length) return { target, empty: true };
+    // a rung the available games can't take to at least 60% of its target is shown as empty rather
+    // than as a x1000 tile holding a x160 slip
+    if (!c?.legs?.length || c.odds < target * 0.6) return { target, empty: true };
     const fair = c.chance > 0 ? 1 / c.chance : null;
     return {
       target, odds: c.odds, chance: c.chance, reached: c.odds >= target * 0.9, legs: c.legs,
