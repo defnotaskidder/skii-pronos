@@ -7,6 +7,7 @@ import { tierFor } from "../../../lib/model";
 import { LEAGUE_BY_ID } from "../../../lib/leagues";
 
 export const maxDuration = 60;
+export const dynamic = "force-dynamic"; // live data: never a build-time snapshot
 
 // The grosse cote desk, in one call:
 //   • ladder — the best build at every rung (x10 … x1000) from the next 48 hours, with its real
