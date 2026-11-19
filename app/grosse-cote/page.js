@@ -227,6 +227,7 @@ function Desk() {
       <section className="card flat gc-rules">
         <div className="card-head"><span className="stat-ico" style={{ margin: 0 }}><Icon name="shield" /></span><h3>{t("The specialist's rules")}</h3></div>
         <ol>
+          <li>{t("Every leg is checked against both teams' last five games (form, goals for–against per game): “landed 7/10” means this exact bet won in 7 of their last 10 games. A leg under 5/10 is left out.")}</li>
           <li>{t("Every leg costs the bookmaker's margin once more: ten legs at 5% margin give back about 60% of what the odds promise. Fewer, better legs beat many short ones.")}</li>
           <li>{t("Look at “expected return”: the closer to 0%, the fairer the coupon. A positive one is rare and worth more than a bigger number.")}</li>
           <li>{t("Stake by the rung: 1% of the bankroll up to x25, 0.5% up to x100, 0.25% beyond. A x100 lands about once in a hundred tries even when every leg is right.")}</li>

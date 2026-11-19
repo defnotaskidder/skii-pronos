@@ -87,6 +87,23 @@ function LegStatus({ l }) {
   return null;
 }
 
+// The analysis behind a leg: both teams' last games (form, goals for / against per game) and how
+// often this very bet landed in them.
+function LegFacts({ l }) {
+  const { t, lang } = useT();
+  const f = l.facts, fr = lang === "fr";
+  const form = (x) => (fr ? String(x || "").replace(/W/g, "V").replace(/D/g, "N").replace(/L/g, "D") : x) || "–";
+  const side = (name, x) => (x?.n ? `${name} ${form(x.form)} (${x.gf}–${x.ga})` : null);
+  const parts = [side(l.home, f.home), side(l.away, f.away)].filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <small className="lg-facts">
+      {parts.join(" · ")}
+      {f.of ? <b className={f.hits / f.of >= 0.7 ? "good" : ""}> · {t("landed {h}/{n}", { h: f.hits, n: f.of })}</b> : null}
+    </small>
+  );
+}
+
 export function CouponLegs({ legs, compact = false }) {
   const { t, tm } = useT();
   return (
@@ -102,6 +119,7 @@ export function CouponLegs({ legs, compact = false }) {
             <span className="lg-main">
               <b>{tm(l.label)}</b>
               <small>{l.home} – {l.away} · {dayLabel(l.date)} {localTime(l.date)}{!compact && LEAGUE_BY_ID[l.league] ? ` · ${LEAGUE_BY_ID[l.league].name}` : ""}</small>
+              {l.facts ? <LegFacts l={l} /> : null}
               {!compact && l.note ? <small style={{ color: "#ffb4b0", whiteSpace: "normal" }}>{t("AI:")} {l.note}</small> : null}
               {l.leagueStatus === "strong" || l.leagueStatus === "weak" || l.result || l.live?.result || l.live?.state === "in" ? (
                 <span style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}><LeagueBadge l={l} /><LegStatus l={l} /></span>

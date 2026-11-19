@@ -5,6 +5,7 @@ import { learning, poolOf } from "../../../lib/daily";
 import { dailyHistory } from "../../../lib/db";
 import { tierFor } from "../../../lib/model";
 import { LEAGUE_BY_ID } from "../../../lib/leagues";
+import { vetted } from "../../../lib/dossier";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic"; // live data: never a build-time snapshot
@@ -60,8 +61,10 @@ async function payload() {
   const rows = await analysedBoard(2);
   const pool = poolOf(rows, 48);
   const { adjust, skill, weak } = await learning();
-  const ladder = RUNGS.map(({ target, maxLegs }) => {
-    const c = buildTarget(pool, { target, profile: "grosse", maxLegs, perLeague: 3, adjust, skill, skipLeagues: weak });
+  const veto = []; // games whose leg the recent results didn't back: out of every rung
+  const ladder = [];
+  for (const { target, maxLegs } of RUNGS) ladder.push(await (async () => {
+    const c = await vetted((ex) => buildTarget(pool, { target, profile: "grosse", maxLegs, perLeague: 3, adjust, skill, skipLeagues: weak, exclude: ex }), { veto });
     if (!c?.legs?.length) return { target, empty: true };
     const fair = c.chance > 0 ? 1 / c.chance : null;
     return {
@@ -69,9 +72,9 @@ async function payload() {
       fair: fair ? r2(fair) : null, edge: fair ? r4(c.odds * c.chance - 1) : null, // expected return per unit staked
       estimated: c.legs.filter((l) => l.estimated).length,
     };
-  });
+  })());
   const hist = await dailyHistory(60).catch(() => null);
-  return { updated: new Date().toISOString(), games: pool.length, ladder, outsiders: outsiders(pool, adjust, new Set(weak)), record: record(hist) };
+  return { updated: new Date().toISOString(), games: pool.length, vetoed: veto.length, ladder, outsiders: outsiders(pool, adjust, new Set(weak)), record: record(hist) };
 }
 
 export async function GET() {
