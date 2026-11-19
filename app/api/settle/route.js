@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { scoreboard } from "../../../lib/espn";
+import { scoreboard, summary } from "../../../lib/espn";
+import { EXTRA_KEY, extraStats } from "../../../lib/settle";
 import { settle } from "../../../lib/model";
 import { LEAGUE_BY_ID } from "../../../lib/leagues";
 
@@ -17,12 +18,14 @@ export async function POST(request) {
     const [league, day] = k.split("|");
     for (const e of await scoreboard(league, day).catch(() => [])) events.set(e.id, e);
   }));
-  const results = picks.map((p) => {
+  const results = await Promise.all(picks.map(async (p) => {
     const e = events.get(p.eventId);
     if (!e) return { eventId: p.eventId, key: p.key, result: null };
     if (e.postponed) return { eventId: p.eventId, key: p.key, result: "V", score: null };
     if (!e.completed) return { eventId: p.eventId, key: p.key, result: null, state: e.state };
-    return { eventId: p.eventId, key: p.key, result: settle(p.key, e.home.score, e.away.score, { sport: e.sport, ot: e.ot }), score: `${e.home.score}-${e.away.score}` };
-  });
+    let stats = null;
+    if (EXTRA_KEY.test(p.key)) { try { stats = extraStats((await summary(p.league, p.eventId, false)).stats); } catch { /* ungraded for now */ } }
+    return { eventId: p.eventId, key: p.key, result: settle(p.key, e.home.score, e.away.score, { sport: e.sport, ot: e.ot, stats }), score: `${e.home.score}-${e.away.score}` };
+  }));
   return NextResponse.json({ results });
 }
