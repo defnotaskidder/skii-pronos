@@ -755,3 +755,37 @@ body::before { background: radial-gradient(900px 520px at 85% -10%, rgba(229, 72
 .sec-head .sec-label { margin: 0; }
 .sec-head .link { margin-left: auto; font-size: 12.5px; color: #60a5fa; font-weight: 600; }
 @media (max-width: 420px) { .g-row { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8px; padding: 10px; } .g-pick { max-width: 38vw; } }
+
+/* ---- grosse cote desk ---- */
+.gc-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.gc-stats .stat-tile b small { font-size: 14px; color: var(--muted); font-weight: 600; }
+.gc-ladder { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 8px; margin: 0 -2px; }
+.gc-ladder::-webkit-scrollbar { display: none; }
+.gc-rung { flex: 1 0 104px; display: grid; gap: 2px; text-align: left; padding: 12px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); color: inherit; }
+.gc-rung:disabled { opacity: .45; }
+.gc-rung.on { border-color: rgba(229, 72, 77, .7); background: linear-gradient(160deg, rgba(229, 72, 77, .2), rgba(229, 72, 77, .04)); }
+.gc-rung .gc-t { font-size: 11.5px; font-weight: 700; color: #ffb4b0; letter-spacing: .04em; }
+.gc-rung b { font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+.gc-rung small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.gc-bar { height: 4px; border-radius: 99px; background: rgba(255, 255, 255, .08); margin-top: 6px; overflow: hidden; }
+.gc-bar i { display: block; height: 100%; border-radius: 99px; background: var(--grad); }
+.gc-open { margin-top: 4px; }
+.gc-facts { display: flex; gap: 16px; text-align: right; flex-wrap: wrap; justify-content: flex-end; }
+.gc-facts div { display: grid; gap: 2px; }
+.gc-facts span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.gc-facts b { font-size: 15px; }
+.gc-open .pos, .gc-stats .pos { color: #4ade80; } .gc-open .neg { color: #f87171; }
+.gc-stake { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px; margin-bottom: 14px; border-radius: 14px; background: rgba(255, 255, 255, .04); border: 1px dashed rgba(255, 255, 255, .18); font-size: 13.5px; }
+.gc-stake .input { width: 120px; height: 36px; }
+.gc-out .g-teams, .gc-out .g-when { color: inherit; }
+.gc-pick { font-size: 13.5px; font-weight: 650; }
+.gc-edge { font-size: 11.5px; color: #4ade80; }
+.gc-out .icon-btn { width: 30px; height: 30px; margin-top: 2px; }
+.won-card.lost { background: linear-gradient(160deg, rgba(244, 63, 94, .12), rgba(244, 63, 94, .03)); border-color: rgba(244, 63, 94, .28); }
+.won-card.lost .w-odds { color: #fda4af; }
+.gc-rules ol { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: var(--muted); font-size: 13px; }
+@media (max-width: 720px) { .gc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gc-facts { gap: 12px; } }
+.gc-desk { min-width: 0; max-width: 100%; }
+.gc-desk > * { min-width: 0; max-width: 100%; }
+.gc-ladder, .gc-desk .won-strip { margin-left: 0; margin-right: 0; }
+@media (max-width: 720px) { .gc-facts { text-align: left; justify-content: flex-start; width: 100%; } }
