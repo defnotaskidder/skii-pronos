@@ -52,7 +52,7 @@ export default function PastCoupon({ params }) {
             <b className="num grad-text" style={{ fontSize: 22 }}>x {odds2(c.odds)}</b>
           </div>
           <div className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-            {t("{w} legs won", { w: won })} · {lost === 1 && c.result === "L" && won + lost === legs.length ? t("lost by one leg") : t("{n} legs lost", { n: lost })}{legs.length - won - lost > 0 ? ` · ${t("{n} not graded", { n: legs.length - won - lost })}` : ""}
+            {t("{w} legs won", { w: won })} · {lost === 1 && c.result === "L" && won + lost === legs.length ? t("lost by one leg") : lost === 1 ? t("1 leg lost") : t("{n} legs lost", { n: lost })}{legs.length - won - lost > 0 ? ` · ${t("{n} not graded", { n: legs.length - won - lost })}` : ""}
           </div>
           <CouponLegs legs={ordered} />
         </section>
