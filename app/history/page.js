@@ -174,15 +174,15 @@ function DailyCoupons({ data }) {
         <section key={d} className="card" style={{ marginBottom: 14 }}>
           <div className="card-head"><h3>{new Date(`${d}T12:00:00Z`).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}</h3></div>
           <div className="grid g-2" style={{ gap: 14 }}>
-            {[["safe", "Coupon du jour", "ticket"], ["grosse", "Grosse cote du jour", "bolt"]].map(([k, title, icon]) => {
+            {[["safe", "Coupon du jour", "ticket"], ["x12", "Express x12.5", "bolt"], ["grosse", "Express x100", "bolt"], ["x200", "Express x200", "bolt"], ["x400", "Express x300/400", "bolt"], ["special_x", "Special x", "bolt"]].map(([k, title, icon]) => {
               const c = byDay[d][k];
-              if (!c) return <div key={k} className="empty" style={{ padding: 20 }}>{t("No {title} that day.", { title: t(title).toLowerCase() })}</div>;
+              if (!c) return k === "safe" || k === "grosse" ? <div key={k} className="empty" style={{ padding: 20 }}>{t("No {title} that day.", { title: t(title).toLowerCase() })}</div> : null;
               const st = c.result === "W" ? "won" : c.result === "L" ? "lost" : "open";
               return (
                 <div key={k} className="card flat tight" style={{ background: "rgba(255,255,255,.02)" }}>
                   <div className="row" style={{ flexWrap: "nowrap" }}>
                     <span className={`stat-ico ${st === "won" ? "green" : st === "lost" ? "live" : ""}`} style={{ margin: 0 }}><Icon name={icon} /></span>
-                    <div style={{ flex: 1, minWidth: 0 }}><b>{t(title)}</b><div className="muted" style={{ fontSize: 12 }}>{t("{n} legs · {chance}", { n: c.legs.length, chance: chanceText(c.chance, lang) })}</div></div>
+                    <div style={{ flex: 1, minWidth: 0 }}><Link href={`/coupon/${d}/${k}`} style={{ color: "var(--text)" }}><b>{t(title)}</b></Link><div className="muted" style={{ fontSize: 12 }}>{t("{n} legs · {chance}", { n: c.legs.length, chance: chanceText(c.chance, lang) })}</div></div>
                     <span className={`pill ${st === "won" ? "green" : st === "lost" ? "red" : "amber"}`}>{t(st)}</span>
                     <b className="num grad-text" style={{ fontSize: 20 }}>{odds2(c.odds)}</b>
                   </div>

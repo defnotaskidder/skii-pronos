@@ -286,7 +286,7 @@ function WonCoupons({ w }) {
       {w.list.length ? (
         <div className="won-strip">
           {w.list.map((c, i) => (
-            <Link key={`${c.day}-${c.kind}`} href="/history" className="won-card fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+            <Link key={`${c.day}-${c.kind}`} href={`/coupon/${c.day}/${c.kind}`} className="won-card fade-in" style={{ animationDelay: `${i * 60}ms` }}>
               <span className="w-head"><Icon name="trophy" size={14} /><span className="ell">{t(KIND_NAME[c.kind] || c.kind)}</span><span className="pill green">{t("pick.won")}</span></span>
               <b className="w-odds num">x {odds2(c.odds)}</b>
               <small className="muted">{dayLabel(c.day)} · {t("{n} legs", { n: c.n })}</small>

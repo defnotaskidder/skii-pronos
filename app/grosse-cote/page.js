@@ -215,7 +215,7 @@ function Desk() {
         <div className="sec-head"><div className="sec-label">{t("LAST BIG COUPONS")}</div><Link href="/history" className="link">{t("History")}</Link></div>
         <div className="won-strip">
           {r.last.map((c) => (
-            <Link key={`${c.day}-${c.kind}`} href="/history" className={`won-card ${c.result === "W" ? "" : "lost"}`}>
+            <Link key={`${c.day}-${c.kind}`} href={`/coupon/${c.day}/${c.kind}`} className={`won-card ${c.result === "W" ? "" : "lost"}`}>
               <span className="w-head"><span className="ell">{t(KIND_NAME[c.kind] || c.kind)}</span><span className={`pill ${c.result === "W" ? "green" : "red"}`}>{c.result === "W" ? t("pick.won") : t("pick.lost")}</span></span>
               <b className="w-odds num">x {odds2(c.odds)}</b>
               <small className="muted">{dayLabel(c.day)} · {t("{n} legs", { n: c.n })}{c.result === "L" && c.lostBy ? " · " + (c.lostBy === 1 ? t("lost by one leg") : t("{n} legs lost", { n: c.lostBy })) : ""}</small>
