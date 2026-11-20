@@ -46,13 +46,15 @@ function outsiders(pool, adjust, weak) {
 function record(hist) {
   const rows = (hist || []).filter((c) => BIG_KINDS.includes(c.kind) && (c.result === "W" || c.result === "L"));
   const lostBy = (c) => (c.legs || []).filter((l) => l.result === "L").length;
+  // "lost by one leg" only when every other leg is graded: a coupon cut short by its first loser says nothing yet
+  const done = (c) => (c.legs || []).every((l) => l.result);
   const won = rows.filter((c) => c.result === "W");
   const units = rows.reduce((a, c) => a + (c.result === "W" ? c.odds - 1 : -1), 0);
-  const brief = (c) => ({ day: c.day, kind: c.kind, odds: c.odds, n: c.legs?.length || 0, result: c.result, lostBy: c.result === "L" ? lostBy(c) : 0 });
+  const brief = (c) => ({ day: c.day, kind: c.kind, odds: c.odds, n: c.legs?.length || 0, result: c.result, lostBy: c.result === "L" ? (lostBy(c) === 1 && !done(c) ? 0 : lostBy(c)) : 0 });
   return {
     days: 60, n: rows.length, w: won.length, units: r2(units),
     best: won.length ? brief(won.reduce((a, c) => (c.odds > a.odds ? c : a))) : null,
-    near: rows.filter((c) => c.result === "L" && lostBy(c) === 1).length,
+    near: rows.filter((c) => c.result === "L" && lostBy(c) === 1 && done(c)).length,
     last: rows.slice(0, 12).map(brief),
   };
 }
