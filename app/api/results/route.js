@@ -3,14 +3,16 @@ import { results, dailyHistory, dailySettle, dbEnabled } from "../../../lib/db";
 import { remember } from "../../../lib/board";
 
 // History of every graded game: the engine's pre-match pick and how it did, plus the
-// archive of daily coupons. ?days=1..60
+// archive of daily coupons. ?days=1..60, &before=<ISO date> pages further back (1500 games a page)
 export async function GET(request) {
   const days = Math.min(60, Math.max(1, Number(request.nextUrl.searchParams.get("days")) || 7));
+  const b = request.nextUrl.searchParams.get("before");
+  const before = b && !Number.isNaN(Date.parse(b)) ? new Date(b).toISOString() : null;
   if (!dbEnabled()) return NextResponse.json({ db: false, games: [], daily: [], stats: null });
   try {
-    const data = await remember(`results:${days}`, 60e3, async () => {
+    const data = await remember(`results:${days}:${before || ""}`, 60e3, async () => {
       await dailySettle();
-      const [games, daily] = await Promise.all([results({ days }), dailyHistory(Math.max(days, 30))]);
+      const [games, daily] = await Promise.all([results({ days, before }), before ? [] : dailyHistory(Math.max(days, 30))]);
       return { games: games || [], daily: daily || [] };
     });
     return NextResponse.json({ db: true, days, ...data, stats: summarise(data.games) });
