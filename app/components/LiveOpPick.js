@@ -1,6 +1,8 @@
 "use client";
-// The OP live pick: the one best single bet among the football games in play (lib/livecoupon.js
-// bestLivePicks), apart from the pre-match picks that happen to be live. Re-chosen every 30
+// The OP card. The OP live pick: the one best single bet among the football games in play
+// (lib/livecoupon.js bestLivePicks), apart from the pre-match picks that happen to be live. And the
+// OP cote 2: the best pair or treble of priced favourites among the next games (lib/opcote.js),
+// shown first when no football is in play. Re-chosen every 30
 // seconds; a pick stays on screen while it still qualifies, so the card does not jump from game
 // to game at every refresh. Its price is the engine's estimate (≈): no free feed carries in-play odds.
 import Link from "next/link";
@@ -8,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "./Icons";
 import { useT } from "./Lang";
 import { useTrack } from "./Providers";
+import { CouponActions, CouponCard, chanceText } from "./Coupon";
 import { LeagueFlag, Ring, Skeleton, TeamLogo, odds2 } from "./ui";
 import { couponText } from "../../lib/coupon-lite";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
@@ -42,6 +45,58 @@ function reasons(l, t, lang) {
   return out.slice(0, 3);
 }
 
+// The OP cote 2: a coupon of two or three priced favourites among the next games.
+function OpCote() {
+  const { t, lang } = useT();
+  const [hours, setHours] = useState(24);
+  const [exclude, setExclude] = useState([]);
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    let alive = true, timer;
+    const get = async () => {
+      if (document.visibilityState !== "hidden") {
+        try {
+          const d = await (await fetch(`/api/op-cote?hours=${hours}${exclude.length ? `&exclude=${exclude.join(",")}` : ""}`)).json();
+          if (!alive) return;
+          if (d.error) setErr(d.error); else { setData(d); setErr(""); }
+        } catch { if (alive) setErr(t("Couldn't load the cote 2.")); }
+      }
+      if (alive) timer = setTimeout(get, 120e3);
+    };
+    get();
+    return () => { alive = false; clearTimeout(timer); };
+  }, [exclude, hours]); // eslint-disable-line react-hooks/exhaustive-deps
+  const c = data?.coupon, rec = data?.record;
+  const windows = (
+    <div className="chips op-windows" role="group" aria-label={t("Kick-off within")}>
+      {[[6, "Next 6 hours"], [24, "Next 24 hours"]].map(([h, label]) => <button key={h} className={`chip ${hours === h ? "on" : ""}`} onClick={() => { if (h !== hours) { setHours(h); setExclude([]); setData(null); } }} aria-pressed={hours === h}>{t(label)}</button>)}
+    </div>
+  );
+  const pc = (x) => (x * 100).toLocaleString(lang === "fr" ? "fr-FR" : "en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (err && !c) return <div className="error">{err}</div>;
+  if (!c) return <>{windows}<Skeleton rows={2} h={70} /></>;
+  if (!c.legs.length) return (
+    <>
+      {windows}
+      <div className="empty" style={{ padding: "26px 16px" }}>
+        {t("No pair or treble of priced favourites reaches odds 2 in the next {h} hours.", { h: hours })}
+        {exclude.length > 0 && <div style={{ marginTop: 10 }}><button className="btn soft sm" onClick={() => { setExclude([]); setData(null); }}><Icon name="refresh" />{t("Start over")}</button></div>}
+      </div>
+    </>
+  );
+  return (
+    <>
+      {windows}
+      <CouponCard coupon={c} title={t("OP cote 2")} compact glow={false} icon="target"
+        eyebrow={t("{n} legs · real bookmaker prices", { n: c.legs.length }) + ` · ${chanceText(c.chance, lang)}`}
+        sub={t("Football games of the next {h} hours that a bookmaker prices: the two or three wins whose odds reach 2 with the highest chance of all landing. No estimated price, no draw.", { h: hours })}
+        footer={<CouponActions coupon={c} title={t("OP cote 2")} extra={<button className="btn ghost" onClick={() => { setExclude((x) => [...x, ...c.legs.map((l) => l.eventId)]); setData(null); }}><Icon name="refresh" />{t("Another combination")}</button>} />} />
+      {rec ? <p className="note" style={{ margin: "12px 0 0" }}>{t("Rebuilt for each of {n} past days from closing prices, this coupon was announced at {s}% and landed {w}% of the time. Prices move: check each one on 1xBet before you play.", { n: rec.days, s: pc(rec.said), w: pc(rec.won) })}</p> : null}
+    </>
+  );
+}
+
 export default function LiveOpPick() {
   const { t, tm, lang } = useT();
   const track = useTrack();
@@ -54,8 +109,11 @@ export default function LiveOpPick() {
   const [tracked, setTracked] = useState(false);
   const keep = useRef(null);
   keep.current = shown;
+  const touched = useRef(false); // the visitor chose a level: no automatic switch after that
+  const cote = level === "cote";
 
   useEffect(() => {
+    if (level === "cote") return undefined;
     let alive = true, timer;
     const get = async () => {
       if (document.visibilityState === "hidden") { timer = setTimeout(get, 30e3); return; }
@@ -65,6 +123,7 @@ export default function LiveOpPick() {
         const d = await (await fetch(`/api/live-pick?${q}`)).json();
         if (!alive) return;
         if (d.error) setErr(d.error);
+        else if (!d.live && !touched.current) { setErr(""); setLevel("cote"); return; } // no football in play: the cote 2 of the next games
         else {
           // stay on the pick already shown while it still qualifies (with its fresh numbers)
           const still = [d.pick, ...(d.next || [])].find((p) => same(p, keep.current));
@@ -80,7 +139,7 @@ export default function LiveOpPick() {
 
   const pick = shown, L = pick ? LEAGUE_BY_ID[pick.league] : null;
   const others = pick ? [data?.pick, ...(data?.next || [])].filter((p) => p && !same(p, pick)).slice(0, 3) : [];
-  const choose = (lv) => { if (lv === level) return; setLevel(lv); setExclude([]); setData(null); setShown(null); };
+  const choose = (lv) => { touched.current = true; if (lv === level) return; setLevel(lv); setExclude([]); setData(null); setShown(null); setErr(""); };
   const another = () => { setExclude((x) => [...x, pick.eventId]); setShown(null); setData(null); };
   const leg = pick && (({ facts, floor, fair, level: _l, ...l }) => l)(pick); // eslint-disable-line no-unused-vars
   const pc = (x) => (x * 100).toLocaleString(lang === "fr" ? "fr-FR" : "en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -90,16 +149,17 @@ export default function LiveOpPick() {
   return (
     <section className="card op-pick">
       <div className="op-head">
-        <span className="op-badge"><Icon name="bolt" size={14} />{t("OP live pick")}</span>
-        <span className="muted op-sub">{t("The one best single bet in play right now")}</span>
+        <span className="op-badge"><Icon name="bolt" size={14} />{cote ? t("OP cote 2") : t("OP live pick")}</span>
+        <span className="muted op-sub">{cote ? t("The best way to odds 2 on the next games") : t("The one best single bet in play right now")}</span>
         <span className="spacer" />
         <div className="chips op-levels" role="group" aria-label={t("Risk level")}>
           {LEVELS.map(([id, label, from]) => <button key={id} className={`chip ${level === id ? "on" : ""}`} onClick={() => choose(id)} aria-pressed={level === id}>{t(label)}<span className="n">≈{from}+</span></button>)}
+          <button className={`chip ${cote ? "on" : ""}`} onClick={() => choose("cote")} aria-pressed={cote}>{t("Cote 2")}<span className="n">{t("coupon")}</span></button>
         </div>
       </div>
       {err && <div className="error" style={{ marginBottom: 10 }}>{err}</div>}
 
-      {!data ? <Skeleton rows={1} h={150} /> : !pick ? (
+      {cote ? <OpCote /> : !data ? <Skeleton rows={1} h={150} /> : !pick ? (
         <div className="empty" style={{ padding: "26px 16px" }}>
           {!data.live ? t("No football game is in play right now.") : !data.eligible ? t("None of the {n} football games in play qualifies right now: the OP pick only comes from a game a bookmaker priced, between the 6th and the 80th minute.", { n: data.live }) : t("No bet in play sits in this price range right now. Try another level.")}
           {exclude.length > 0 && <div style={{ marginTop: 10 }}><button className="btn soft sm" onClick={() => { setExclude([]); setData(null); }}><Icon name="refresh" />{t("Start over")}</button></div>}

@@ -43,6 +43,8 @@ export default function Live() {
         <button className="tile-btn" aria-label={t("Refresh")} onClick={refresh}><Icon name="refresh" /></button>
       </Top>
 
+      <div style={{ marginBottom: 18 }}><LiveOpPick /></div>
+
       {loading ? <Skeleton rows={3} h={150} /> : live.length === 0 ? (
         <div className="empty" style={{ marginBottom: 22 }}>
           <Icon name="live" />{t("Nothing live right now.")}<br />
@@ -60,7 +62,6 @@ export default function Live() {
               ); })}
             </div>
           )}
-          <div style={{ marginBottom: 18 }}><LiveOpPick /></div>
           <div style={{ marginBottom: 18 }}><LiveCoupon /></div>
           {topLive > 0 && <div className="top-banner">🔥 {t("{n} of the day's top picks are live — they're highlighted and shown first.", { n: topLive })}</div>}
           <div className="grid stagger" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(268px, 1fr))", marginBottom: 26, paddingTop: 8 }}>

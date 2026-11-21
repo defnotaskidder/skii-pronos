@@ -21,5 +21,6 @@ On the closing-line history in `.cache/soccer` (`node scripts/soccer-history.mjs
 - `node shape.mjs '[{"rho":-0.07},{"c3":0.1}]' 3` — alternative score-matrix shapes, train vs hold-out.
 - `node shift.mjs` — would a constant shift make a derived market truer on the hold-out season?
 - `node devig.mjs` — ways of removing the bookmaker's margin.
+- `node opcote.mjs` — the OP cote 2 (best pair or treble of priced favourites reaching odds 2) rebuilt for every day of the history at closing prices: announced chance against how often it landed, and variants (totals, two legs, three legs, short favourites only).
 
 Change the engine only when the hold-out (or walk-forward) number improves by more than its standard error.
