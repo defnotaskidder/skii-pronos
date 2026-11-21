@@ -31,7 +31,7 @@ function outsiders(pool, adjust, weak) {
     let best = null;
     for (const m of analysis.markets) {
       if (m.info || m.estimated || !m.odds || m.odds < 2.5 || m.odds > 15 || m.v > 0.01) continue;
-      const p = adjust(m.p, false, ev.league);
+      const p = adjust(m.p, false, ev.league, { key: m.key, quality: analysis.quality, sport: ev.sport });
       const edge = p * m.odds - 1;
       if (!(p >= 0.08) || edge < 0.02) continue;
       const score = edge * Math.sqrt(p);

@@ -793,3 +793,28 @@ body::before { background: radial-gradient(900px 520px at 85% -10%, rgba(229, 72
 .leg .lg-main small.lg-facts { white-space: normal; color: var(--dim); font-size: 11.5px; margin-top: 2px; }
 .lg-facts b { color: var(--muted); font-weight: 650; }
 .lg-facts b.good { color: #4ade80; }
+
+/* live coupon: best build + the visitor's own */
+.live-coupon .card.hero { margin-top: 2px; }
+.lc-games { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; padding-right: 2px; }
+.lc-game { border: 1px solid var(--line); border-radius: 14px; padding: 10px 10px 8px; background: rgba(255, 255, 255, .02); min-width: 0; }
+.lc-game.on { border-color: rgba(229, 72, 77, .5); background: rgba(229, 72, 77, .05); }
+.lc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; }
+.lc-teams { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1; font-size: 13.5px; }
+.lc-teams b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-weight: 650; }
+.lc-score { font-weight: 800; padding: 0 2px; flex: none; }
+.lc-markets { padding-bottom: 2px; }
+.chip.lc-m { height: auto; min-height: 44px; padding: 6px 11px; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.15; }
+.chip.lc-m span { font-size: 12px; white-space: nowrap; }
+.chip.lc-m b { font-size: 14px; color: var(--text); }
+.chip.lc-m small { font-size: 10.5px; color: var(--dim); }
+.chip.lc-m.on b, .chip.lc-m.on small { color: #fff; }
+.lc-slip { margin: 0 0 12px; padding: 12px; border-radius: 14px; border: 1px dashed var(--line-2); }
+.lc-slip.has { border-style: solid; border-color: rgba(229, 72, 77, .45); background: rgba(229, 72, 77, .05); }
+.lc-leg { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.lc-leg:last-child { border-bottom: 0; }
+.lc-leg span { flex: 1; display: flex; flex-direction: column; }
+.lc-leg span b, .lc-leg span small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lc-leg small { color: var(--dim); font-size: 11.5px; }
+.lc-leg.closed { opacity: .55; }
+@media (max-width: 640px) { .lc-games { max-height: 440px; } .lc-slip .row .btn { flex: 1; } }

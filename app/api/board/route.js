@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { boardForClient } from "../../../lib/board";
-import { leagueSkillBrief } from "../../../lib/leagueform";
 
 export const maxDuration = 60;
 
@@ -10,7 +9,8 @@ export const maxDuration = 60;
 export async function GET(request) {
   const days = Math.min(4, Math.max(1, Number(request.nextUrl.searchParams.get("days")) || 2));
   try {
-    const [events, skill] = await Promise.all([boardForClient(days), leagueSkillBrief().catch(() => ({}))]);
+    // league labels (strong / weak) are no longer sent: they did not predict anything (lib/calibration.js)
+    const [events, skill] = [await boardForClient(days), {}];
     return NextResponse.json({ events, skill, updated: new Date().toISOString() }, { headers: { "cache-control": "public, s-maxage=15, stale-while-revalidate=45" } });
   } catch (e) {
     return NextResponse.json({ error: e.message, events: [] }, { status: 502 });

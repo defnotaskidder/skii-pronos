@@ -73,7 +73,7 @@ export default function Record() {
           {mo?.n > 0 && <p className="note" style={{ margin: "0 0 18px" }}>{t("Model-only picks have no bookmaker price (≈ odds), so they can't be bet at that price: {w}/{n} won, {u}u. Only “All picks” counts them.", { w: mo.w, n: mo.n, u: signed(mo.units, 1) })}</p>}
 
           <section className="card" style={{ marginBottom: 18 }} data-reveal>
-            <Head title={t("Where the model is strongest")} sub={`${t(STATUS.strong[2])} · ${t("Tap a league to see its picks")}`} />
+            <Head title={t("Leagues on a good run")} sub={`${t(STATUS.strong[2])} · ${t("Tap a league to see its picks")}`} />
             {d.best?.length ? (
               <div className="grid g-3" style={{ gap: 12 }}>{d.best.map((l) => <LeagueCard key={l.league} l={l} onOpen={setOpenLeague} />)}</div>
             ) : (
@@ -83,9 +83,9 @@ export default function Record() {
 
           {d.weak?.length > 0 && (
             <section className="card" style={{ marginBottom: 18, borderColor: "rgba(244,63,94,.22)" }} data-reveal>
-              <Head title={t("Leagues to avoid")} sub={t(STATUS.weak[2])} />
+              <Head title={t("Leagues on a bad run")} sub={t(STATUS.weak[2])} />
               <div className="grid g-3" style={{ gap: 12 }}>{d.weak.map((l) => <LeagueCard key={l.league} l={l} weak onOpen={setOpenLeague} />)}</div>
-              <p className="note" style={{ margin: "12px 0 0" }}>{t("Weak leagues are left out of the coupon du jour.")}</p>
+              <p className="note" style={{ margin: "12px 0 0" }}>{t("A run is the past, not a forecast: tested on the engine's own picks, leagues on a bad run went on to do better than expected. No league is boosted or left out because of its run.")}</p>
             </section>
           )}
 
@@ -172,7 +172,7 @@ function LeagueCard({ l, weak, onOpen }) {
       </div>
       <div className="bar"><i style={{ width: `${conf * 100}%`, background: weak ? "linear-gradient(90deg, #f5b03b, #f43f5e)" : undefined }} /></div>
       <div className="row" style={{ gap: 6, marginTop: 10 }}>
-        <span className={`pill ${weak ? "red" : "green"}`} title={t("What the engine learned about this league: its chances here are shifted by this much. Kept small until there are more results.")}>{t("Learned shift {x} pts", { x: signed(pts) })}</span>
+        <span className={`pill ${weak ? "red" : "green"}`} title={t("How far the results sit from what the engine expected here. It describes the past and does not change the chances shown.")}>{t("Gap {x} pts", { x: signed(pts) })}</span>
         {l.priced?.n > 0 && <span className="pill">{t("Priced ROI {x}", { x: roiText(l.priced.roi) })}</span>}
         {l.pending > 0 && <span className="pill cyan">{t("{n} upcoming", { n: l.pending })}</span>}
       </div>

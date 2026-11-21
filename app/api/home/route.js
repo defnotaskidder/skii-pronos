@@ -33,7 +33,7 @@ function picksForDay(events, day) {
   const evs = events.filter((e) => dayOf(e.date) === day && !e.postponed);
   const top = evs.filter((e) => e.top).sort((a, b) => a.top.rank - b.top.rank).map(pickOf).filter(Boolean);
   if (top.length >= 6) return top;
-  const more = evs.filter((e) => !e.top && e.state === "pre" && e.a?.pick && !e.a.pick.estimated && UNITS[e.a.pick.tier] && e.a.pick.ls !== "weak")
+  const more = evs.filter((e) => !e.top && e.state === "pre" && e.a?.pick && !e.a.pick.estimated && UNITS[e.a.pick.tier])
     .sort((a, b) => (b.a.pick.safe ?? 0) - (a.a.pick.safe ?? 0)).slice(0, 6 - top.length).map(pickOf).filter(Boolean);
   return [...top, ...more];
 }
