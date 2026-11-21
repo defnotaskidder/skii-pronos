@@ -818,3 +818,39 @@ body::before { background: radial-gradient(900px 520px at 85% -10%, rgba(229, 72
 .lc-leg small { color: var(--dim); font-size: 11.5px; }
 .lc-leg.closed { opacity: .55; }
 @media (max-width: 640px) { .lc-games { max-height: 440px; } .lc-slip .row .btn { flex: 1; } }
+
+/* OP live pick: the one best single bet in play */
+.op-pick { background: radial-gradient(520px 240px at 100% 0%, rgba(249, 115, 22, .2), transparent 62%), radial-gradient(420px 240px at 0% 100%, rgba(229, 72, 77, .18), transparent 60%), linear-gradient(160deg, #241a1b, #1b1b1f); border-color: rgba(249, 115, 22, .5); box-shadow: 0 0 0 1px rgba(249, 115, 22, .18), 0 16px 44px -18px rgba(249, 115, 22, .6); }
+.op-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.op-badge { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: linear-gradient(135deg, #f97316, #e5484d); box-shadow: 0 8px 24px -8px rgba(249, 115, 22, .85); white-space: nowrap; }
+.op-sub { font-size: 12.5px; }
+.op-levels .chip { height: 32px; padding: 0 11px; font-size: 12.5px; }
+.op-levels .chip .n { min-width: 0; height: auto; padding: 0; background: none; font-weight: 600; }
+.op-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; align-items: stretch; }
+.op-game, .op-bet { border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; background: rgba(255, 255, 255, .03); min-width: 0; }
+.op-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; min-width: 0; }
+.op-league { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; min-width: 0; }
+.op-league span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-teams { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; text-align: center; }
+.op-team { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; font-size: 13px; }
+.op-team b { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 650; }
+.op-score { font-size: 28px; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.op-bet { display: flex; align-items: center; gap: 14px; }
+.op-label { font-size: 19px; font-weight: 750; letter-spacing: -.015em; line-height: 1.2; margin: 3px 0 2px; overflow-wrap: anywhere; }
+.op-odds { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
+.op-odds small { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+.op-odds b { font-size: 30px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+.op-odds small.op-fair { letter-spacing: 0; text-transform: none; font-size: 11.5px; color: var(--muted); cursor: help; }
+.op-why { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.op-why li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.45; }
+.op-why li svg { flex: none; margin-top: 3px; color: #fb923c; }
+.op-actions { margin-top: 14px; }
+.op-actions .link { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+.op-next { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.op-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; text-align: left; min-width: 0; }
+.op-row:hover { background: rgba(255, 255, 255, .05); }
+.op-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.op-row-main b, .op-row-main small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-row-main b { font-size: 13.5px; font-weight: 650; }
+.op-row-main small { font-size: 11.5px; color: var(--dim); }
+@media (max-width: 720px) { .op-body { grid-template-columns: 1fr; } .op-sub { display: none; } .op-levels { width: 100%; } .op-actions .btn { flex: 1; } .op-odds b { font-size: 26px; } .op-label { font-size: 17px; } }
