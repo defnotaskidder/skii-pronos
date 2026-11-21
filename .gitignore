@@ -10,3 +10,6 @@ desktop/dist/
 
 .vercel
 .env*.local
+
+# backtest data (re-created by scripts/backtest/pull.mjs and goaltimes.mjs)
+scripts/backtest/*.json
