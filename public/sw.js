@@ -1,5 +1,5 @@
 // Skii Pronos service worker: push alerts + a tiny offline fallback for the app shell.
-const VERSION = "skii-sw-1";
+const VERSION = "skii-sw-2";
 
 self.addEventListener("install", (e) => { self.skipWaiting(); });
 self.addEventListener("activate", (e) => { e.waitUntil(self.clients.claim()); });
@@ -12,8 +12,9 @@ self.addEventListener("push", (e) => {
     body: d.body || "",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
+    // the page shows the same alert under the same tag while a tab is open: the second one
+    // replaces the first without ringing again
     tag: d.tag || undefined,
-    renotify: !!d.tag,
     data: { url: d.url || "/" },
     vibrate: d.kind === "goal" ? [80, 40, 80] : [40],
   };

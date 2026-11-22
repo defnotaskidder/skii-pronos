@@ -6,6 +6,7 @@ import { useT } from "./Lang";
 import { usePush } from "./Push";
 
 const ROWS = [
+  ["starts", "Matches starting", "One alert each time matches kick off, followed or not"],
   ["toppicks", "Top picks", "When one of the day's top 10 picks kicks off, and its result"],
   ["kickoff", "Kick-off", "When a followed match starts"],
   ["goals", "Goals", "Every goal in followed matches"],
@@ -47,7 +48,16 @@ export default function NotificationSettings() {
       </div>
       {ROWS.map(([k, l, d]) => (
         <div key={k} className="setting">
-          <div style={{ flex: 1 }}><b>{t(l)}</b><small>{t(d)}</small></div>
+          <div style={{ flex: 1 }}>
+            <b>{t(l)}</b><small>{t(d)}</small>
+            {k === "starts" && n.prefs.starts && (
+              <div className="seg" role="group" aria-label={t("Matches starting")} style={{ marginTop: 8 }}>
+                {[["all", "All sports"], ["soccer", "Football only"]].map(([v, lab]) => (
+                  <button key={v} className={(n.prefs.startsSport || "all") === v ? "on" : ""} aria-pressed={(n.prefs.startsSport || "all") === v} onClick={() => n.setPref("startsSport", v)}>{t(lab)}</button>
+                ))}
+              </div>
+            )}
+          </div>
           <button className={`switch ${n.prefs[k] ? "on" : ""}`} aria-label={t(l)} onClick={() => n.setPref(k, !n.prefs[k])} />
         </div>
       ))}

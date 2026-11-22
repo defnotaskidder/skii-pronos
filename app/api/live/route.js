@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { board } from "../../../lib/espn";
 import { boardForClient, remember } from "../../../lib/board";
+import { LEAGUE_BY_ID } from "../../../lib/leagues";
 
 export const revalidate = 10;
 
@@ -24,7 +25,8 @@ export async function GET(request) {
       return NextResponse.json({ live, ...(top ? { top } : {}) }, { headers: { "cache-control": "public, s-maxage=30, stale-while-revalidate=60" } });
     }
     const games = events.map((e) => ({
-      id: e.id, league: e.league, state: e.state, detail: e.detail, minute: e.minute, period: e.period, date: e.date,
+      id: e.id, league: e.league, sport: e.sport, tier: LEAGUE_BY_ID[e.league]?.tier, pp: e.postponed || undefined,
+      state: e.state, detail: e.detail, minute: e.minute, period: e.period, date: e.date,
       home: e.home?.short, away: e.away?.short, hs: e.home?.score, as: e.away?.score, reds: e.reds,
     }));
     return NextResponse.json({ games, at: new Date().toISOString() });

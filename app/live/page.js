@@ -8,6 +8,7 @@ import { useT } from "../components/Lang";
 import { LiveCard, MatchRow } from "../components/Match";
 import LiveCoupon from "../components/LiveCoupon";
 import LiveOpPick from "../components/LiveOpPick";
+import KickoffAlerts from "../components/KickoffAlerts";
 import { LeagueFlag, Skeleton } from "../components/ui";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 
@@ -44,6 +45,7 @@ export default function Live() {
       </Top>
 
       <div style={{ marginBottom: 18 }}><LiveOpPick /></div>
+      <div style={{ marginBottom: 18 }}><KickoffAlerts /></div>
 
       {loading ? <Skeleton rows={3} h={150} /> : live.length === 0 ? (
         <div className="empty" style={{ marginBottom: 22 }}>
