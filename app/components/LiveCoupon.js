@@ -2,7 +2,9 @@
 // Live coupons from the games in play: the engine's best one for a target, or the visitor's own,
 // built leg by leg from each game's live markets. Prices are re-computed every 30 seconds from the
 // score and the clock; none is a bookmaker's (no free feed carries in-play odds).
-import { useEffect, useMemo, useState } from "react";
+// The engine's coupon is held: the bets on screen are sent back at each refresh (?keep) and stay
+// while they are still worth taking; when one is replaced, a line says which and why.
+import { useEffect, useMemo, useRef, useState } from "react";
 import Icon from "./Icons";
 import { useT } from "./Lang";
 import { useTrack } from "./Providers";
@@ -12,16 +14,20 @@ import { couponText, hitChance, product } from "../../lib/coupon-lite";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 
 const TARGETS = [[2, "Safe"], [5, "x5"], [10, "x10"], [20, "x20"], [50, "x50"], [100, "x100"]];
+const WHY = { closed: "no longer open", weak: "the game turned against it", short: "its price fell too low" };
 const clock = (g) => (g.sport === "soccer" ? (/^HT$|half/i.test(g.detail) ? "HT" : g.minute ? `${g.minute}'` : g.detail) : g.detail) || "LIVE";
 
 export default function LiveCoupon({ compact = false }) {
-  const { t, lang } = useT();
+  const { t, tm, lang, locale } = useT();
   const [tab, setTab] = useState("best");
   const [target, setTarget] = useState(compact ? 20 : 2);
   const [exclude, setExclude] = useState([]);
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   const withGames = tab === "mine";
+  const held = useRef(new Map()); // "eventId:key" → the leg as first shown { eventId, key, odds, label, home, away }
+  const [note, setNote] = useState(null); // the last change: { at, gone: [{ label, home, away, why }] }
+  const fresh = () => { held.current = new Map(); setNote(null); };
 
   useEffect(() => {
     let alive = true, timer;
@@ -31,9 +37,20 @@ export default function LiveCoupon({ compact = false }) {
         const q = new URLSearchParams({ target: String(target) });
         if (exclude.length) q.set("exclude", exclude.join(","));
         if (withGames) q.set("games", "1");
+        if (held.current.size) q.set("keep", [...held.current.values()].map((l) => `${l.eventId}:${l.key}:${l.odds}`).join(","));
         const d = await (await fetch(`/api/live-coupon?${q}`)).json();
         if (!alive) return;
-        if (d.error) setErr(d.error); else { setData((cur) => ({ ...d, games: d.games || cur?.games })); setErr(""); }
+        if (d.error) setErr(d.error); else {
+          if (d.coupon) {
+            // remember each leg as first shown; a leg the engine replaced is named with its reason
+            const gone = (d.coupon.dropped || []).map((x) => ({ ...held.current.get(`${x.eventId}:${x.key}`), why: x.why })).filter((x) => x.label);
+            const next = new Map();
+            for (const l of d.coupon.legs) { const k = `${l.eventId}:${l.key}`; next.set(k, held.current.get(k) || { eventId: l.eventId, key: l.key, odds: l.odds, label: l.label, home: l.home, away: l.away }); }
+            held.current = next;
+            if (gone.length) setNote({ at: Date.now(), gone });
+          }
+          setData((cur) => ({ ...d, games: d.games || cur?.games })); setErr("");
+        }
       } catch { if (alive) setErr(t("Couldn't load the live coupon.")); }
       if (alive) timer = setTimeout(get, 30e3);
     };
@@ -56,18 +73,23 @@ export default function LiveCoupon({ compact = false }) {
       {tab === "best" ? (
         <>
           <div className="chips" style={{ margin: "4px 0 12px" }}>
-            {TARGETS.map(([x, label]) => <button key={x} className={`chip ${target === x ? "on" : ""}`} onClick={() => { setTarget(x); setExclude([]); setData(null); }}>{x === 2 ? t(label) : label}</button>)}
+            {TARGETS.map(([x, label]) => <button key={x} className={`chip ${target === x ? "on" : ""}`} onClick={() => { fresh(); setTarget(x); setExclude([]); setData(null); }}>{x === 2 ? t(label) : label}</button>)}
           </div>
           {!c ? <Skeleton rows={3} h={56} /> : c.legs.length ? (
             <CouponCard coupon={c} title={target === 2 ? t("Safest live coupon") : t("Live x{t}", { t: target })} compact glow={false} icon="live"
               eyebrow={t("{n} games in play · refreshes every 30 s", { n: c.live }) + ` · ${chanceText(c.chance, lang)}`}
-              sub={(c.reached === false ? t("The games in play can't reach x{t}: this is the closest build.", { t: target }) + " " : "") + t("Live prices are estimates (≈): no free feed carries in-play odds. Take a leg on 1xBet only at or above the shown odds — they move every minute.")}
-              footer={<CouponActions coupon={c} title={t("Live coupon")} extra={<button className="btn ghost" onClick={() => { setExclude((x) => [...x, ...c.legs.map((l) => l.eventId)]); setData((cur) => (cur ? { ...cur, coupon: null } : cur)); }}><Icon name="refresh" />{t("Another combination")}</button>} />} />
+              sub={(c.reached === false ? t("Under x{t} at the current prices: too few likely bets in play, or its prices have moved.", { t: target }) + " " : "") + t("The coupon keeps the same bets until one is no longer worth taking.") + " " + t("Live prices are estimates (≈): no free feed carries in-play odds. Take a leg on 1xBet only at or above the shown odds — they move every minute.")}
+              footer={<CouponActions coupon={c} title={t("Live coupon")} extra={<button className="btn ghost" onClick={() => { fresh(); setExclude((x) => [...x, ...c.legs.map((l) => l.eventId)]); setData((cur) => (cur ? { ...cur, coupon: null } : cur)); }}><Icon name="refresh" />{t("Another combination")}</button>} />} />
           ) : (
             <div className="empty">
               {c.live ? t("The games in play can't build x{t} right now. Try a lower target.", { t: target }) : t("No game the engine follows is in play right now.")}
-              {exclude.length > 0 && <div style={{ marginTop: 10 }}><button className="btn soft sm" onClick={() => { setExclude([]); setData(null); }}><Icon name="refresh" />{t("Start over")}</button></div>}
+              {exclude.length > 0 && <div style={{ marginTop: 10 }}><button className="btn soft sm" onClick={() => { fresh(); setExclude([]); setData(null); }}><Icon name="refresh" />{t("Start over")}</button></div>}
             </div>
+          )}
+          {note && c?.legs.length > 0 && (
+            <p className="muted lc-note">
+              <Icon name="refresh" size={13} /> {t("Changed at {time}", { time: new Date(note.at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) })}: {note.gone.map((g) => `${tm(g.label)} (${g.home} – ${g.away}) — ${t(WHY[g.why] || WHY.closed)}`).join(" · ")}
+            </p>
           )}
         </>
       ) : <Builder games={data?.games} />}

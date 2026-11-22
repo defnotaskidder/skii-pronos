@@ -866,3 +866,6 @@ body::before { background: radial-gradient(900px 520px at 85% -10%, rgba(229, 72
 .kick-act { display: inline-flex; gap: 6px; flex: none; }
 /* phones: the text keeps a readable width; the two small buttons drop to their own line, at the right */
 @media (max-width: 560px) { .kick-strip { flex-wrap: wrap; } .kick-txt { min-width: 180px; } .kick-act { margin-left: auto; } }
+
+/* live coupon: the line that says which bet was replaced, and why */
+.lc-note { font-size: 12.5px; margin: 10px 2px 0; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }

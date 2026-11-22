@@ -15,6 +15,7 @@ The live model and the OP live pick, on finished games replayed minute by minute
 - `livefit.mjs priced` — fits those multipliers on half of the games and scores them, and any settings given on the command line, on the other half.
 - `livedraw.mjs` — the draw and the low-scoring bets; is the goal expectation rebuilt from the 1X2 stretched? (It is not.)
 - `liveop.mjs` — the OP pick as a visitor would have seen it every five minutes, graded; the numbers shown on the card (`OP_RECORD`).
+- `livehold.mjs` — how often the live coupon changes what it recommends, minute by minute, with nothing happening on the pitch: the rule before 22 Nov 2026, today's rule rebuilt from nothing, and today's rule as the page uses it (the legs on screen are kept). `holdline.mjs [gameIndex]` prints one game's timeline, before and now.
 
 On the closing-line history in `.cache/soccer` (`node scripts/soccer-history.mjs`, then `node scripts/train-soccer.mjs`):
 - `node base.mjs` — predicted vs actual for every market the score matrix prices.
