@@ -1,5 +1,7 @@
 -- Per-minute scheduler for Skii Pronos alerts (Supabase pg_cron + pg_net).
--- Run once in Supabase → SQL editor. Safe to re-run: cron.schedule replaces a job with the same name.
+-- The production site runs these same statements itself, once, from its daily job (lib/alerts.js
+-- ensureScheduler; /api/cron?when=scheduler does it at once). This file is the same thing by hand:
+-- Supabase → SQL editor. Safe to re-run: cron.schedule replaces a job with the same name.
 
 -- 1. Extensions (the Database → Extensions toggles do the same thing).
 create extension if not exists pg_cron;
