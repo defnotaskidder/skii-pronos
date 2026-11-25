@@ -51,16 +51,16 @@ function ExtraLiveCardInner({ g, at, pricesAt }) {
         <span className="muted" style={{ fontSize: 12, minWidth: 0, flex: 1, ...fit }}>{extraLeague(g)}</span>
       </div>
       <div className="score">
-        <span className="t"><TeamLogo team={{ logo: g.homeLogo, short: g.home }} size={40} /><span>{g.home}</span></span>
+        <span className="t"><TeamLogo team={{ logo: g.homeLogo, short: g.home }} size={40} /><span>{g.redsHome > 0 ? "🟥 " : ""}{g.home}</span></span>
         <span className="s">{g.hs}<span className="dim"> : </span>{g.as}</span>
-        <span className="t"><TeamLogo team={{ logo: g.awayLogo, short: g.away }} size={40} /><span>{g.away}</span></span>
+        <span className="t"><TeamLogo team={{ logo: g.awayLogo, short: g.away }} size={40} /><span>{g.redsAway > 0 ? "🟥 " : ""}{g.away}</span></span>
       </div>
       {g.pick ? (
         <div className="row" style={{ justifyContent: "space-between", fontSize: 12.5, gap: 8, flexWrap: "nowrap" }}>
           <span className="muted" style={{ flex: "none" }}>{t("Live pick")}</span>
           <b style={{ minWidth: 0, ...fit }}>{tm(g.pick.label)} <span className="num">@ {odds2(g.pick.odds)}</span></b>
         </div>
-      ) : <div className="muted" style={{ fontSize: 12.5 }}>{g.stale ? t("The score changed after the prices were read: next pick at the next reading") : g.priced ? t("No pick at this price right now") : t("No bookmaker price on this game")}</div>}
+      ) : <div className="muted" style={{ fontSize: 12.5 }}>{g.stale ? t("A goal or a red card came after the prices were read: next pick at the next reading") : g.priced ? t("No pick at this price right now") : t("No bookmaker price on this game")}</div>}
       {g.pick ? <div className="muted lx-read">{t("Real in-play price read at {time}: check it on 1xBet", { time: hm(pricesAt || read) })}</div>
         : now - read > 120e3 ? <div className="muted lx-read">{t("Score read at {time}", { time: hm(read) })}</div> : null}
     </div>

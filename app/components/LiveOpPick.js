@@ -198,7 +198,7 @@ export default function LiveOpPick() {
                 <div className="op-label">{tm(pick.label)}</div>
                 <div className="muted" style={{ fontSize: 12.5 }}>{byBook ? t("{x}% chance by the bookmaker's in-play prices", { x: Math.round(pick.p * 100) }) : t("{x}% chance by the live model", { x: Math.round(pick.p * 100) })}</div>
               </div>
-              <div className="op-odds"><small>{byBook ? t("real odds") : t("est. odds")}</small><b className="num grad-text">{byBook ? "" : "≈"}{odds2(pick.odds)}</b>{pick.fair ? <small className="op-fair" title={t("The price at which this bet breaks even over time. A bookmaker usually offers a little less: anything above it is in your favour.")}>{t("fair {x}", { x: odds2(pick.fair) })}</small> : null}</div>
+              <div className="op-odds"><small>{byBook ? t("real odds") : t("est. odds")}</small><b className="num grad-text">{byBook ? "" : "≈"}{odds2(pick.odds)}</b>{pick.fair ? <small className="op-fair" title={t("The price at which this bet breaks even over time. A bookmaker usually offers a little less: anything above it is in your favour.")}>{t("fair {x}", { x: odds2(pick.fair) })}</small> : null}{pick.real ? <small className="op-fair" title={t("A bookmaker's real in-play price for this bet, read at the time shown.")}>{t("real {x} at {time}", { x: odds2(pick.real.odds), time: pick.real.at ? new Date(pick.real.at).toLocaleTimeString(lang === "fr" ? "fr-FR" : "en-GB", { hour: "2-digit", minute: "2-digit" }) : "" })}</small> : null}</div>
             </div>
           </div>
           <ul className="op-why">{reasons(pick, t, lang).map((r, i) => <li key={i}><Icon name="check" size={13} />{r}</li>)}</ul>

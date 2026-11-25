@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { analysedBoard, remember } from "../../../lib/board";
 import { bestLivePicks, OP_LEVELS, OP_RECORD } from "../../../lib/livecoupon";
-import { bookPicks, extraLive } from "../../../lib/morelive";
+import { bookPicks, extraLive, sameTeam } from "../../../lib/morelive";
 
 export const maxDuration = 60;
 
@@ -25,6 +25,13 @@ export async function GET(request) {
       // fresh scores joined to the priced reading: a game whose score moved since the prices were read has no markets left
       const x = await extraLive(rows.map((r) => r.ev)).catch(() => ({ games: [], pricesAt: null }));
       const extra = x.games;
+      // a game of the main feed the bookmaker also prices in play: the real price of the engine's
+      // bet goes beside its estimate (same score as when the prices were read, else it says nothing)
+      for (const p of own.picks) {
+        const k = (x.known || []).find((g) => `${g.hs}-${g.as}` === p.live?.score && (sameTeam(g.home, p.home) >= 1 || sameTeam(g.away, p.away) >= 1));
+        const m = k?.markets.find((y) => y.key === p.key);
+        if (m) p.real = { odds: m.odds, at: x.pricesAt ? new Date(x.pricesAt).toISOString() : null };
+      }
       const book = bookPicks(extra, { band: OP_LEVELS[level], level, exclude, at: x.pricesAt });
       // likeliest first (to the point); between equals, the engine's worst-case chance, else the chance itself
       const picks = [...own.picks, ...book.picks].sort((a, b) => Math.round(b.p * 100) - Math.round(a.p * 100) || (b.floor ?? b.p) - (a.floor ?? a.p)).slice(0, 4);
