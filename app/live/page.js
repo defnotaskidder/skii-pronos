@@ -9,6 +9,7 @@ import { LiveCard, MatchRow } from "../components/Match";
 import LiveCoupon from "../components/LiveCoupon";
 import LiveOpPick from "../components/LiveOpPick";
 import KickoffAlerts from "../components/KickoffAlerts";
+import LiveExtra from "../components/LiveExtra";
 import { LeagueFlag, Skeleton } from "../components/ui";
 import { LEAGUE_BY_ID } from "../../lib/leagues";
 
@@ -71,6 +72,8 @@ export default function Live() {
           </div>
         </>
       )}
+
+      <LiveExtra />
 
       <div className="card flat tight" style={{ marginBottom: 22, display: "flex", gap: 12, alignItems: "center" }}>
         <span className="stat-ico" style={{ margin: 0 }}><Icon name="sparkles" /></span>
