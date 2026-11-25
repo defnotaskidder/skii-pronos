@@ -55,7 +55,8 @@ export default function LiveExtra() {
   }, [d, q]);
 
   if (!d?.configured || !d.games?.length) return null;
-  const shown = all || q ? groups : groups.slice(0, 8);
+  // everything at once on an ordinary afternoon; folded only when the list gets long
+  const shown = all || q || d.games.length <= 45 ? groups : groups.slice(0, 12);
   const time = at ? new Date(at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "";
   return (
     <section className="card live-extra" style={{ marginBottom: 22 }}>
