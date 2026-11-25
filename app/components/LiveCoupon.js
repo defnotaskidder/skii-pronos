@@ -59,6 +59,9 @@ export default function LiveCoupon({ compact = false }) {
   }, [target, exclude, withGames]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const c = data?.coupon;
+  // legs from the second live source: real bookmaker prices, read a few minutes ago
+  const bookLeg = c?.legs?.find((l) => l.source === "book");
+  const bookTime = bookLeg?.readAt ? new Date(bookLeg.readAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "";
   return (
     <section className="card live-coupon">
       <div className="card-head" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -78,7 +81,7 @@ export default function LiveCoupon({ compact = false }) {
           {!c ? <Skeleton rows={3} h={56} /> : c.legs.length ? (
             <CouponCard coupon={c} title={target === 2 ? t("Safest live coupon") : t("Live x{t}", { t: target })} compact glow={false} icon="live"
               eyebrow={t("{n} games in play · refreshes every 30 s", { n: c.live }) + ` · ${chanceText(c.chance, lang)}`}
-              sub={(c.reached === false ? t("Under x{t} at the current prices: too few likely bets in play, or its prices have moved.", { t: target }) + " " : "") + t("The coupon keeps the same bets until one is no longer worth taking.") + " " + t("Live prices are estimates (≈): no free feed carries in-play odds. Take a leg on 1xBet only at or above the shown odds — they move every minute.")}
+              sub={(c.reached === false ? t("Under x{t} at the current prices: too few likely bets in play, or its prices have moved.", { t: target }) + " " : "") + t("The coupon keeps the same bets until one is no longer worth taking.") + " " + (bookLeg ? t("A price without ≈ is a real bookmaker price from a second source, read at {time}: check the score and the price on 1xBet. A coupon with such a bet cannot be tracked here.", { time: bookTime }) + " " : "") + t("Live prices are estimates (≈): no free feed carries in-play odds. Take a leg on 1xBet only at or above the shown odds — they move every minute.")}
               footer={<CouponActions coupon={c} title={t("Live coupon")} extra={<button className="btn ghost" onClick={() => { fresh(); setExclude((x) => [...x, ...c.legs.map((l) => l.eventId)]); setData((cur) => (cur ? { ...cur, coupon: null } : cur)); }}><Icon name="refresh" />{t("Another combination")}</button>} />} />
           ) : (
             <div className="empty">

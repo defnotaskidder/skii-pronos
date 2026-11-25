@@ -62,7 +62,8 @@ export function CouponActions({ coupon, title, extra }) {
   return (
     <div className="row">
       <button className="btn primary" disabled={!open.length} onClick={() => { slip.replace(open.map(bare)); slip.setOpen(true); }}><Icon name="ticket" />{t("Load in my coupon")}</button>
-      <button className="btn soft" disabled={tracked} onClick={() => { track.track({ kind: "coupon", title, legs: coupon.legs.map(bare) }); setTracked(true); }}><Icon name={tracked ? "check" : "history"} />{tracked ? t("Tracking") : t("Track")}</button>
+      {/* a leg of the second live source cannot be graded by the site: no Track on such a coupon */}
+      <button className="btn soft" disabled={tracked || coupon.legs.some((l) => l.source === "book")} onClick={() => { track.track({ kind: "coupon", title, legs: coupon.legs.map(bare) }); setTracked(true); }}><Icon name={tracked ? "check" : "history"} />{tracked ? t("Tracking") : t("Track")}</button>
       <button className="btn ghost" onClick={copy}><Icon name="copy" />{copied ? t("Copied") : t("Copy for Telegram")}</button>
       {extra}
     </div>
@@ -110,15 +111,17 @@ export function CouponLegs({ legs, compact = false }) {
     <div className="ticket-legs stagger">
       {legs.map((l) => {
         const r = l.result || l.live?.result;
+        // a game of the second live source has no match page behind it
+        const byBook = l.source === "book", Row = byBook ? "div" : Link;
         return (
-          <Link key={l.eventId} href={`/match/${l.league}/${l.eventId}`} className={`leg ${r ? `res-${r}` : ""}`}>
+          <Row key={l.eventId} {...(byBook ? {} : { href: `/match/${l.league}/${l.eventId}` })} className={`leg ${r ? `res-${r}` : ""}`}>
             <span style={{ display: "flex" }}>
               <TeamLogo team={{ logo: l.homeLogo, short: l.home }} size={compact ? 28 : 32} />
               <span style={{ marginLeft: -9 }}><TeamLogo team={{ logo: l.awayLogo, short: l.away }} size={compact ? 28 : 32} /></span>
             </span>
             <span className="lg-main">
               <b>{tm(l.label)}</b>
-              <small>{l.home} – {l.away} · {dayLabel(l.date)} {localTime(l.date)}{!compact && LEAGUE_BY_ID[l.league] ? ` · ${LEAGUE_BY_ID[l.league].name}` : ""}</small>
+              <small>{l.home} – {l.away} · {dayLabel(l.date)} {localTime(l.date)}{byBook && l.leagueName ? ` · ${l.leagueName}` : !compact && LEAGUE_BY_ID[l.league] ? ` · ${LEAGUE_BY_ID[l.league].name}` : ""}</small>
               {l.facts ? <LegFacts l={l} /> : null}
               {!compact && l.note ? <small style={{ color: "#ffb4b0", whiteSpace: "normal" }}>{t("AI:")} {l.note}</small> : null}
               {l.leagueStatus === "strong" || l.leagueStatus === "weak" || l.result || l.live?.result || l.live?.state === "in" ? (
@@ -129,7 +132,7 @@ export function CouponLegs({ legs, compact = false }) {
               <b className="num">{l.estimated ? "≈" : ""}{odds2(l.odds)}</b>
               <small>{pct(l.safe ?? l.p)}{l.tier ? <> · <Tier t={l.tier} /></> : null}</small>
             </span>
-          </Link>
+          </Row>
         );
       })}
     </div>

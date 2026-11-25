@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analysedBoard, remember } from "../../../lib/board";
 import { buildLiveCoupon, liveGames } from "../../../lib/livecoupon";
+import { bookPool, moreLive, withoutKnown } from "../../../lib/morelive";
 
 export const maxDuration = 60;
 
@@ -20,7 +21,12 @@ export async function GET(request) {
   try {
     const build = async () => {
       const rows = await analysedBoard(2);
-      const coupon = buildLiveCoupon(rows, { target, exclude, keep, maxLegs: target > 100 ? 12 : target > 20 ? 10 : target > 4 ? 8 : 4 });
+      // the second source's games the bookmaker prices in play join the pool at their real prices
+      // (never once the reading is 15 minutes old)
+      const more = await moreLive().catch(() => null);
+      const usable = more?.configured && more.at && Date.now() - more.at < 15 * 60e3;
+      const extra = usable ? bookPool(withoutKnown(more.games, rows.map((r) => r.ev)), more.at) : [];
+      const coupon = buildLiveCoupon(rows, { target, exclude, keep, extra, maxLegs: target > 100 ? 12 : target > 20 ? 10 : target > 4 ? 8 : 4 });
       return withGames ? { coupon, games: liveGames(rows) } : { coupon };
     };
     // a visitor's own kept legs are theirs alone: built at once (the board itself is shared), never cached

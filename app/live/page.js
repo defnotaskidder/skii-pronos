@@ -79,7 +79,7 @@ export default function Live() {
               ))}
             </div>
           )}
-          {live.length > 0 && <div style={{ marginBottom: 18 }}><LiveCoupon /></div>}
+          <div style={{ marginBottom: 18 }}><LiveCoupon /></div>
           {topLive > 0 && <div className="top-banner">🔥 {t("{n} of the day's top picks are live — they're highlighted and shown first.", { n: topLive })}</div>}
           <div className="grid stagger" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(268px, 1fr))", marginBottom: 26, paddingTop: 8 }}>
             {shown.map((e) => <LiveCard key={e.id} ev={e} best={e.id === bestId} />)}
