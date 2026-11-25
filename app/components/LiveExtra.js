@@ -1,29 +1,24 @@
 "use client";
 // The games in play that the main feed does not carry (UEFA Youth League, national cups, lower
-// divisions…), from the second live-score source (lib/morelive.js). Scores only: no pick, no link
-// to a match page. The source is refreshed every 15 minutes or so, so the list says when its
-// scores were read, and the minute shown is that reading plus the time gone by since.
-// Nothing is shown while the second source is not configured or has nothing more to add.
-import { useEffect, useMemo, useState } from "react";
-import Icon from "./Icons";
+// divisions…), from the second live-score source (lib/morelive.js). They are shown among the
+// site's own live games, as cards of the same shape. A game the bookmaker prices in play carries
+// a pick read off those real prices; the others show their score only. No match page behind them.
+// The source is refreshed every few minutes (a daily call budget), so each card says when it was
+// read, and the minute shown is that reading plus the time gone by since.
+import { memo, useEffect, useState } from "react";
 import { useT } from "./Lang";
+import { TeamLogo, odds2, useNow } from "./ui";
 
-const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const CAP = { "1H": 45, "2H": 90, ET: 120 };
-
-export default function LiveExtra() {
-  const { t, locale } = useT();
+// { games, at }: empty while the second source is not configured or has nothing to add
+export function useMoreLive() {
   const [d, setD] = useState(null);
-  const [q, setQ] = useState("");
-  const [all, setAll] = useState(false);
-
   useEffect(() => {
     let alive = true, timer;
     const get = async () => {
       if (document.visibilityState !== "hidden") {
-        try { const r = await (await fetch("/api/live-extra")).json(); if (alive && r && Array.isArray(r.games)) setD({ ...r, got: Date.now() }); } catch { /* next round */ }
+        try { const r = await (await fetch("/api/live-extra")).json(); if (alive && r && Array.isArray(r.games)) setD(r); } catch { /* next round */ }
       }
-      if (alive) timer = setTimeout(get, 120e3);
+      if (alive) timer = setTimeout(get, 90e3);
     };
     get();
     // a tab that comes back reads the list at once instead of waiting for the next round
@@ -31,57 +26,41 @@ export default function LiveExtra() {
     document.addEventListener("visibilitychange", wake);
     return () => { alive = false; clearTimeout(timer); document.removeEventListener("visibilitychange", wake); };
   }, []);
+  return { games: d?.configured ? d.games : NONE, at: d?.at ? new Date(d.at).getTime() : null };
+}
+const NONE = []; // the same empty list at every render
 
-  const at = d?.at ? new Date(d.at).getTime() : null;
-  const clock = (g) => {
-    if (g.status === "HT" || g.status === "BT") return t("HT");
-    if (g.status === "P") return t("Pens");
-    const cap = CAP[g.status];
-    if (g.minute == null || !cap) return t("LIVE");
-    const now = Math.min(cap, g.minute + Math.max(0, Math.floor((Date.now() - (at || Date.now())) / 60e3)));
-    return `${now}'`;
-  };
-  const groups = useMemo(() => {
-    const needle = norm(q.trim());
-    const m = new Map();
-    for (const g of d?.games || []) {
-      if (needle && !norm(`${g.home} ${g.away} ${g.league} ${g.country}`).includes(needle)) continue;
-      const k = `${g.country}|${g.league}`;
-      if (!m.has(k)) m.set(k, { key: k, country: g.country, league: g.league, games: [] });
-      m.get(k).games.push(g);
-    }
-    // international competitions first, then by country
-    return [...m.values()].sort((a, b) => (a.country === "World" ? 0 : 1) - (b.country === "World" ? 0 : 1) || a.country.localeCompare(b.country) || a.league.localeCompare(b.league));
-  }, [d, q]);
+export const extraKey = (g) => `x:${g.country}|${g.league}`;
+export const extraLeague = (g) => `${g.country && g.country !== "World" ? `${g.country} · ` : ""}${g.league}`;
+const CAP = { "1H": 45, "2H": 90, ET: 120 };
 
-  if (!d?.configured || !d.games?.length) return null;
-  // everything at once on an ordinary afternoon; folded only when the list gets long
-  const shown = all || q || d.games.length <= 45 ? groups : groups.slice(0, 12);
-  const time = at ? new Date(at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "";
+function ExtraLiveCardInner({ g, at }) {
+  const { t, tm, locale } = useT();
+  const now = useNow();
+  const read = at || now;
+  const clock = g.status === "HT" || g.status === "BT" ? t("HT") : g.status === "P" ? t("Pens")
+    : g.minute == null || !CAP[g.status] ? t("LIVE") : `${Math.min(CAP[g.status], g.minute + Math.max(0, Math.floor((now - read) / 60e3)))}'`;
+  const time = new Date(read).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  const fit = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   return (
-    <section className="card live-extra" style={{ marginBottom: 22 }}>
-      <div className="card-head" style={{ flexWrap: "wrap", gap: 10 }}>
-        <span className="pill live">{t("LIVE")}</span>
-        <h3 style={{ flex: 1, minWidth: 0 }}>{t("More live games")} <span className="lx-n">{d.games.length}</span></h3>
-        <input className="lx-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Team or competition")} aria-label={t("Team or competition")} />
+    <div className="lcard extra">
+      <div className="row" style={{ gap: 8 }}>
+        <span className="pill live">{clock}</span>
+        <span className="muted" style={{ fontSize: 12, minWidth: 0, flex: 1, ...fit }}>{extraLeague(g)}</span>
       </div>
-      <p className="muted lx-note">{t("Scores only, from a second source · read at {time}", { time })}. {t("No picks on these games: the engine has no prices for them.")}</p>
-      {shown.length === 0 ? <div className="muted" style={{ fontSize: 13 }}>{t("Nothing matches.")}</div> : shown.map((grp) => (
-        <div key={grp.key} className="lx-group">
-          <div className="lx-league">{grp.country && grp.country !== "World" ? `${grp.country} · ` : ""}{grp.league}</div>
-          {grp.games.map((g) => (
-            <div key={g.id} className="lx-row">
-              <span className="lx-clock">{clock(g)}</span>
-              <span className="lx-team">{g.home}</span>
-              <b className="num lx-score">{g.hs} : {g.as}</b>
-              <span className="lx-team away">{g.away}</span>
-            </div>
-          ))}
+      <div className="score">
+        <span className="t"><TeamLogo team={{ logo: g.homeLogo, short: g.home }} size={40} /><span>{g.home}</span></span>
+        <span className="s">{g.hs}<span className="dim"> : </span>{g.as}</span>
+        <span className="t"><TeamLogo team={{ logo: g.awayLogo, short: g.away }} size={40} /><span>{g.away}</span></span>
+      </div>
+      {g.pick ? (
+        <div className="row" style={{ justifyContent: "space-between", fontSize: 12.5, gap: 8, flexWrap: "nowrap" }}>
+          <span className="muted" style={{ flex: "none" }}>{t("Live pick")}</span>
+          <b style={{ minWidth: 0, ...fit }}>{tm(g.pick.label)} <span className="num">@ {odds2(g.pick.odds)}</span></b>
         </div>
-      ))}
-      {!all && !q && groups.length > shown.length && (
-        <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => setAll(true)}><Icon name="chevron" size={14} />{t("Show all {n} competitions", { n: groups.length })}</button>
-      )}
-    </section>
+      ) : <div className="muted" style={{ fontSize: 12.5 }}>{g.priced ? t("No pick at this price right now") : t("No bookmaker price on this game")}</div>}
+      <div className="muted lx-read">{g.pick ? t("Real in-play price read at {time}: check it on 1xBet", { time }) : t("Score read at {time}", { time })}</div>
+    </div>
   );
 }
+export const ExtraLiveCard = memo(ExtraLiveCardInner);
