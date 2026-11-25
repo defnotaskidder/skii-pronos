@@ -22,9 +22,22 @@ const clock = (l, t) => (atBreak(l) ? t("HT") : /^\d+'/.test(l.live?.detail || "
 // minutes of normal time still to play (first-half stoppage time is still 45 minutes from the end)
 const minutesLeft = (l) => (atBreak(l) || (l.live?.period === 1 && (l.live?.minute || 0) >= 45) ? 45 : Math.max(1, 90 - (l.live?.minute || 0)));
 const same = (a, b) => a && b && a.eventId === b.eventId && a.key === b.key;
+// a pick read off the bookmaker's real in-play prices (second source), not made by the live model
+const book = (l) => l?.source === "book";
+const readTime = (l, locale) => (l?.readAt ? new Date(l.readAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : "");
 
 // The facts behind a pick, worded for the visitor.
 function reasons(l, t, lang) {
+  if (book(l)) {
+    const [hs, as] = String(l.live?.score || "0-0").split("-").map(Number), total = hs + as, out = [];
+    let x;
+    if ((x = l.key.match(/^O(\d+(?:\.\d+)?)$/))) { const need = Math.floor(Number(x[1])) + 1 - total; out.push(need <= 1 ? t("One more goal wins it.") : t("Needs {n} more goals.", { n: need })); }
+    else if ((x = l.key.match(/^U(\d+(?:\.\d+)?)$/))) { const room = Math.floor(Number(x[1])) - total; out.push(room <= 0 ? t("Wins if no more goal is scored.") : room === 1 ? t("Still wins with one more goal.") : t("Still wins with {n} more goals.", { n: room })); }
+    else if (l.key === "12") out.push(t("Wins unless the game ends level."));
+    out.push(t("The chance is the bookmaker's own in-play prices with its margin taken out, not the engine's model."));
+    out.push(t("Price read at {time} with the score at {score}: check both on 1xBet before playing.", { time: readTime(l, lang === "fr" ? "fr-FR" : "en-GB"), score: String(l.live?.score || "").replace("-", " : ") }));
+    return out;
+  }
   const f = l.facts || {}, out = [];
   const team = f.side === "home" ? l.home : f.side === "away" ? l.away : null;
   const left = minutesLeft(l);
@@ -138,6 +151,8 @@ export default function LiveOpPick() {
   useEffect(() => { setTracked(false); }, [shown?.eventId, shown?.key]);
 
   const pick = shown, L = pick ? LEAGUE_BY_ID[pick.league] : null;
+  const byBook = book(pick);
+  const Teams = byBook ? "div" : Link;
   const others = pick ? [data?.pick, ...(data?.next || [])].filter((p) => p && !same(p, pick)).slice(0, 3) : [];
   const choose = (lv) => { touched.current = true; if (lv === level) return; setLevel(lv); setExclude([]); setData(null); setShown(null); setErr(""); };
   const another = () => { setExclude((x) => [...x, pick.eventId]); setShown(null); setData(null); };
@@ -161,37 +176,39 @@ export default function LiveOpPick() {
 
       {cote ? <OpCote /> : !data ? <Skeleton rows={1} h={150} /> : !pick ? (
         <div className="empty" style={{ padding: "26px 16px" }}>
-          {!data.live ? t("No football game is in play right now.") : !data.eligible ? t("None of the {n} football games in play qualifies right now: the OP pick only comes from a game a bookmaker priced, between the 6th and the 80th minute.", { n: data.live }) : t("No bet in play sits in this price range right now. Try another level.")}
+          {!data.live ? t("No football game is in play right now.") : !data.eligible ? (data.live === 1 ? t("The one football game in play does not qualify right now: the OP pick only comes from a game a bookmaker priced, between the 6th and the 80th minute.") : t("None of the {n} football games in play qualifies right now: the OP pick only comes from a game a bookmaker priced, between the 6th and the 80th minute.", { n: data.live })) : t("No bet in play sits in this price range right now. Try another level.")}
           {exclude.length > 0 && <div style={{ marginTop: 10 }}><button className="btn soft sm" onClick={() => { setExclude([]); setData(null); }}><Icon name="refresh" />{t("Start over")}</button></div>}
         </div>
       ) : (
         <>
           <div className="op-body">
             <div className="op-game">
-              <div className="op-meta"><span className="pill live">{clock(pick, t)}</span><span className="muted op-league"><LeagueFlag league={L} size={12} /><span>{L?.short || L?.name || pick.league}</span></span></div>
-              <Link href={`/match/${pick.league}/${pick.eventId}`} className="op-teams">
+              <div className="op-meta"><span className="pill live">{clock(pick, t)}</span><span className="muted op-league">{byBook ? <span>{pick.leagueName}</span> : <><LeagueFlag league={L} size={12} /><span>{L?.short || L?.name || pick.league}</span></>}</span></div>
+              {/* a game of the second source has no match page behind it */}
+              <Teams className="op-teams" {...(byBook ? {} : { href: `/match/${pick.league}/${pick.eventId}` })}>
                 <span className="op-team"><TeamLogo team={{ logo: pick.homeLogo, short: pick.home }} size={34} /><b>{pick.home}</b></span>
                 <span className="num op-score">{(pick.live?.score || "0-0").replace("-", " : ")}</span>
                 <span className="op-team"><TeamLogo team={{ logo: pick.awayLogo, short: pick.away }} size={34} /><b>{pick.away}</b></span>
-              </Link>
+              </Teams>
             </div>
             <div className="op-bet">
               <Ring value={pick.p} size={64} stroke={6} label={`${Math.round(pick.p * 100)}%`} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div className="eyebrow">{t("The bet")}</div>
                 <div className="op-label">{tm(pick.label)}</div>
-                <div className="muted" style={{ fontSize: 12.5 }}>{t("{x}% chance by the live model", { x: Math.round(pick.p * 100) })}</div>
+                <div className="muted" style={{ fontSize: 12.5 }}>{byBook ? t("{x}% chance by the bookmaker's in-play prices", { x: Math.round(pick.p * 100) }) : t("{x}% chance by the live model", { x: Math.round(pick.p * 100) })}</div>
               </div>
-              <div className="op-odds"><small>{t("est. odds")}</small><b className="num grad-text">≈{odds2(pick.odds)}</b>{pick.fair ? <small className="op-fair" title={t("The price at which this bet breaks even over time. A bookmaker usually offers a little less: anything above it is in your favour.")}>{t("fair {x}", { x: odds2(pick.fair) })}</small> : null}</div>
+              <div className="op-odds"><small>{byBook ? t("real odds") : t("est. odds")}</small><b className="num grad-text">{byBook ? "" : "≈"}{odds2(pick.odds)}</b>{pick.fair ? <small className="op-fair" title={t("The price at which this bet breaks even over time. A bookmaker usually offers a little less: anything above it is in your favour.")}>{t("fair {x}", { x: odds2(pick.fair) })}</small> : null}</div>
             </div>
           </div>
           <ul className="op-why">{reasons(pick, t, lang).map((r, i) => <li key={i}><Icon name="check" size={13} />{r}</li>)}</ul>
           <div className="row op-actions">
-            <button className="btn primary" disabled={tracked} onClick={() => { track.track({ kind: "coupon", title: t("OP live pick"), legs: [leg] }); setTracked(true); }}><Icon name={tracked ? "check" : "history"} />{tracked ? t("Tracking") : t("Track")}</button>
+            {/* a game of the second source cannot be graded by the site: no Track on it */}
+            {!byBook && <button className="btn primary" disabled={tracked} onClick={() => { track.track({ kind: "coupon", title: t("OP live pick"), legs: [leg] }); setTracked(true); }}><Icon name={tracked ? "check" : "history"} />{tracked ? t("Tracking") : t("Track")}</button>}
             <button className="btn ghost" onClick={copy}><Icon name="copy" />{copied ? t("Copied") : t("Copy for Telegram")}</button>
             <button className="btn ghost" onClick={another}><Icon name="refresh" />{t("Another one")}</button>
             <span className="spacer" />
-            <Link href={`/match/${pick.league}/${pick.eventId}`} className="link">{t("Live analysis")} <Icon name="chevron" size={14} /></Link>
+            {!byBook && <Link href={`/match/${pick.league}/${pick.eventId}`} className="link">{t("Live analysis")} <Icon name="chevron" size={14} /></Link>}
           </div>
           {others.length > 0 && (
             <div className="op-next">
@@ -201,14 +218,18 @@ export default function LiveOpPick() {
                   <span className="pill live">{clock(o, t)}</span>
                   <span className="op-row-main"><b>{tm(o.label)}</b><small>{o.home} {(o.live?.score || "").replace("-", " : ")} {o.away}</small></span>
                   <span className="num muted">{Math.round(o.p * 100)}%</span>
-                  <b className="num">≈{odds2(o.odds)}</b>
+                  <b className="num">{book(o) ? "" : "≈"}{odds2(o.odds)}</b>
                 </button>
               ))}
             </div>
           )}
           <p className="note" style={{ margin: "12px 0 0" }}>
-            {rec ? t("Tested on {g} finished games replayed minute by minute: the {n} picks chosen this way won {w}% of the time (the engine had said {s}%).", { g: rec.games.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB"), n: rec.picks.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB"), w: pc(rec.won), s: pc(rec.said) }) + " " : ""}
-            {t("The price is an estimate (≈): no free feed carries in-play odds. Take it on 1xBet only at or above the shown odds, it moves every minute. At the fair price or better, the bet is in your favour.")}
+            {byBook ? t("This pick comes from a second source: real bookmaker prices in play, read at {time} and refreshed every few minutes. It is not one of the engine's picks, so the replay test does not cover it. Take it on 1xBet only if the score is the same and the price is at or above the one shown.", { time: readTime(pick, lang === "fr" ? "fr-FR" : "en-GB") }) : (
+              <>
+                {rec ? t("Tested on {g} finished games replayed minute by minute: the {n} picks chosen this way won {w}% of the time (the engine had said {s}%).", { g: rec.games.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB"), n: rec.picks.toLocaleString(lang === "fr" ? "fr-FR" : "en-GB"), w: pc(rec.won), s: pc(rec.said) }) + " " : ""}
+                {t("The price is an estimate (≈): no free feed carries in-play odds. Take it on 1xBet only at or above the shown odds, it moves every minute. At the fair price or better, the bet is in your favour.")}
+              </>
+            )}
           </p>
         </>
       )}

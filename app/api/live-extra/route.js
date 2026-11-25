@@ -17,7 +17,7 @@ export async function GET(request) {
     }
     if (!d.configured) return NextResponse.json({ configured: false, games: [] }, { headers: { "cache-control": "public, s-maxage=300, stale-while-revalidate=600" } });
     const events = await board(0, -1).catch(() => []);
-    const games = withoutKnown(d.games, events);
+    const games = withoutKnown(d.games, events).map(({ markets, ...g }) => g); // eslint-disable-line no-unused-vars
     return NextResponse.json({ configured: true, games, total: d.games.length, at: d.at ? new Date(d.at).toISOString() : null, ageSeconds: age, ...(d.error ? { error: d.error } : {}) }, { headers: { "cache-control": "public, s-maxage=60, stale-while-revalidate=120" } });
   } catch (e) {
     return NextResponse.json({ configured: true, games: [], error: e.message }, { status: 502 });
