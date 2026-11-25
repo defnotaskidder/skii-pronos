@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { analysedBoard, remember } from "../../../lib/board";
 import { bestLivePicks, OP_LEVELS, OP_RECORD } from "../../../lib/livecoupon";
-import { bookPicks, moreLive, withoutKnown } from "../../../lib/morelive";
+import { bookPicks, extraLive } from "../../../lib/morelive";
 
 export const maxDuration = 60;
 
@@ -10,7 +10,8 @@ export const maxDuration = 60;
 //   the site's own games, read by the live model (lib/livecoupon.js bestLivePicks): the price is an
 //   estimate, the feed carries no in-play odds for them;
 //   the second source's games the bookmaker prices in play (lib/morelive.js bookPicks): the price is
-//   real, read a few minutes ago (never used once the reading is 15 minutes old).
+//   real, read a few minutes ago (never used once the reading is 15 minutes old, nor once the
+//   score has moved since: the scores come fresh from the open feeds, lib/openlive.js).
 //   ?level=safe|mid|bold     the estimated-odds band (≈1.25+, ≈1.50+, ≈2.00+)
 //   ?exclude=id,id           games to leave out ("another one")
 export async function GET(request) {
@@ -21,10 +22,10 @@ export async function GET(request) {
     const out = await remember(`livepick:${level}:${exclude.join(",")}`, 20e3, async () => {
       const rows = await analysedBoard(2);
       const own = bestLivePicks(rows, { level, exclude, max: 4 });
-      const more = await moreLive().catch(() => null);
-      const usable = more?.configured && more.at && Date.now() - more.at < 15 * 60e3;
-      const extra = usable ? withoutKnown(more.games, rows.map((r) => r.ev)) : [];
-      const book = bookPicks(extra, { band: OP_LEVELS[level], level, exclude, at: more?.at });
+      // fresh scores joined to the priced reading: a game whose score moved since the prices were read has no markets left
+      const x = await extraLive(rows.map((r) => r.ev)).catch(() => ({ games: [], pricesAt: null }));
+      const extra = x.games;
+      const book = bookPicks(extra, { band: OP_LEVELS[level], level, exclude, at: x.pricesAt });
       // likeliest first (to the point); between equals, the engine's worst-case chance, else the chance itself
       const picks = [...own.picks, ...book.picks].sort((a, b) => Math.round(b.p * 100) - Math.round(a.p * 100) || (b.floor ?? b.p) - (a.floor ?? a.p)).slice(0, 4);
       return { pick: picks[0] || null, next: picks.slice(1), eligible: own.eligible + book.eligible, live: own.live + extra.length, level, record: OP_RECORD[level] || null };

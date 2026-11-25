@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { analysedBoard, remember } from "../../../lib/board";
 import { buildLiveCoupon, liveGames } from "../../../lib/livecoupon";
-import { bookPool, moreLive, withoutKnown } from "../../../lib/morelive";
+import { bookPool, extraLive } from "../../../lib/morelive";
 
 export const maxDuration = 60;
 
@@ -22,10 +22,9 @@ export async function GET(request) {
     const build = async () => {
       const rows = await analysedBoard(2);
       // the second source's games the bookmaker prices in play join the pool at their real prices
-      // (never once the reading is 15 minutes old)
-      const more = await moreLive().catch(() => null);
-      const usable = more?.configured && more.at && Date.now() - more.at < 15 * 60e3;
-      const extra = usable ? bookPool(withoutKnown(more.games, rows.map((r) => r.ev)), more.at) : [];
+      // (never once the reading is 15 minutes old, nor once the score has moved since it)
+      const x = await extraLive(rows.map((r) => r.ev)).catch(() => ({ games: [], pricesAt: null }));
+      const extra = bookPool(x.games, x.pricesAt);
       const coupon = buildLiveCoupon(rows, { target, exclude, keep, extra, maxLegs: target > 100 ? 12 : target > 20 ? 10 : target > 4 ? 8 : 4 });
       return withGames ? { coupon, games: liveGames(rows) } : { coupon };
     };
